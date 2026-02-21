@@ -13,6 +13,8 @@
     <!-- jsPDF e autoTable para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -20,36 +22,40 @@
         :root {
             --primary-yellow: #FFC107;
             --dark-gray: #343a40;
+            --light-gray: #f8f9fa;
+            --success-green: #28a745;
+            --danger-red: #dc3545;
+            --info-blue: #17a2b8;
         }
         body {
-            background-color: #f8f9fa;
+            background-color: var(--light-gray);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .navbar-brand {
             font-weight: 700;
             letter-spacing: 1px;
         }
-        .bg-primary-yellow {
-            background-color: var(--primary-yellow) !important;
-        }
-        .text-primary-yellow {
-            color: var(--primary-yellow);
-        }
         .card {
             border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
             border: none;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
         }
         .btn-warning {
             background-color: var(--primary-yellow);
             border-color: var(--primary-yellow);
             color: #212529;
+            font-weight: 500;
         }
         .btn-warning:hover {
             background-color: #e0a800;
             border-color: #d39e00;
         }
         .saldo-negativo {
-            color: red !important;
+            color: var(--danger-red) !important;
             font-weight: bold;
         }
         .nav-tabs .nav-link.active {
@@ -71,9 +77,17 @@
             padding: 15px 0;
             margin-top: 30px;
         }
-        .loading {
-            cursor: wait;
-            opacity: 0.7;
+        .stat-card {
+            border-left: 5px solid var(--primary-yellow);
+        }
+        .btn-edit {
+            background-color: var(--info-blue);
+            border-color: var(--info-blue);
+            color: white;
+        }
+        .btn-edit:hover {
+            background-color: #138496;
+            border-color: #117a8b;
         }
     </style>
 </head>
@@ -110,66 +124,119 @@
         </ul>
 
         <!-- Conteúdo das abas -->
-        <div class="tab-content p-3 border border-top-0 bg-white rounded-bottom" id="myTabContent">
+        <div class="tab-content p-4 border border-top-0 bg-white rounded-bottom shadow-sm" id="myTabContent">
             <!-- Aba Dashboard -->
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
-                <h4 class="mb-3">Dashboard</h4>
-                <div class="row">
+                <h4 class="mb-4"><i class="fas fa-chart-line me-2 text-warning"></i>Dashboard</h4>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Saldo Atual</h6>
+                                    <h3 id="saldoAtual" class="fw-bold">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-wallet fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Entradas do Mês</h6>
+                                    <h3 id="entradasMes" class="fw-bold text-success">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-arrow-down fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Saídas do Mês</h6>
+                                    <h3 id="saidasMes" class="fw-bold text-danger">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-arrow-up fa-2x text-danger"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Previsão do Mês</h6>
+                                    <h3 id="previsaoMes" class="fw-bold">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-chart-line fa-2x text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3 g-3">
                     <div class="col-md-4">
-                        <div class="card bg-warning text-dark mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">Saldo Atual (mês)</h5>
-                                <h3 id="saldoAtual" class="fw-bold">R$ 0,00</h3>
-                                <small>Entradas - Saídas</small>
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Margem de Lucro</h6>
+                                    <h3 id="margemLucro" class="fw-bold">0%</h3>
+                                </div>
+                                <i class="fas fa-percent fa-2x text-warning"></i>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-dark text-white mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">Margem de Lucro</h5>
-                                <h3 id="margemLucro" class="fw-bold">0%</h3>
-                                <small>Lucro / Entradas</small>
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Total Combustível (mês)</h6>
+                                    <h3 id="totalCombustivelMes" class="fw-bold">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-gas-pump fa-2x text-warning"></i>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">Total Combustível (mês)</h5>
-                                <h3 id="totalCombustivelMes" class="fw-bold">R$ 0,00</h3>
-                                <small>Abastecimentos no mês</small>
+                        <div class="card stat-card p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Média Diária</h6>
+                                    <h3 id="mediaDiaria" class="fw-bold">R$ 0,00</h3>
+                                </div>
+                                <i class="fas fa-calendar-day fa-2x text-warning"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Gráficos -->
-                <div class="row">
+                <div class="row mt-4 g-3">
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5>Entradas vs Saídas (últimos 7 dias)</h5>
+                            <h5><i class="fas fa-chart-line me-2 text-warning"></i>Entradas vs Saídas (últimos 7 dias)</h5>
                             <canvas id="graficoLinha" style="height: 250px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5>Consumo de Combustível por Veículo (mês)</h5>
+                            <h5><i class="fas fa-truck me-2 text-warning"></i>Consumo de Combustível por Veículo (mês)</h5>
                             <canvas id="graficoBarras" style="height: 250px;"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-3">
+                <div class="row mt-3 g-3">
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5>Materiais mais movimentados (entradas)</h5>
+                            <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (entradas)</h5>
                             <canvas id="graficoPizzaEntrada" style="height: 250px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5>Materiais mais movimentados (saídas)</h5>
+                            <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (saídas)</h5>
                             <canvas id="graficoPizzaSaida" style="height: 250px;"></canvas>
                         </div>
                     </div>
@@ -178,124 +245,141 @@
 
             <!-- Aba Transações -->
             <div class="tab-pane fade" id="transacoes" role="tabpanel">
-                <h4 class="mb-3">Controle de Transações (Caixa)</h4>
-                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalTransacao">
+                <h4 class="mb-3"><i class="fas fa-exchange-alt me-2 text-warning"></i>Controle de Transações</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalTransacao" onclick="limparModalTransacao()">
                     <i class="fas fa-plus"></i> Nova Transação
                 </button>
-                <table class="table table-striped table-hover" id="tabelaTransacoes">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Tipo</th>
-                            <th>Categoria</th>
-                            <th>Descrição</th>
-                            <th>Valor (R$)</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="tabelaTransacoes">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor (R$)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Aba Combustível -->
             <div class="tab-pane fade" id="combustivel" role="tabpanel">
-                <h4 class="mb-3">Controle de Combustível</h4>
-                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalCombustivel">
+                <h4 class="mb-3"><i class="fas fa-gas-pump me-2 text-warning"></i>Controle de Combustível</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalCombustivel" onclick="limparModalCombustivel()">
                     <i class="fas fa-plus"></i> Novo Abastecimento
                 </button>
-                <table class="table table-striped" id="tabelaCombustivel">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Veículo</th>
-                            <th>Valor (R$)</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tabelaCombustivel">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Veículo</th>
+                                <th>Valor (R$)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Aba Veículos -->
             <div class="tab-pane fade" id="veiculos" role="tabpanel">
-                <h4 class="mb-3">Veículos</h4>
-                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalVeiculo">
+                <h4 class="mb-3"><i class="fas fa-truck me-2 text-warning"></i>Veículos</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalVeiculo" onclick="limparModalVeiculo()">
                     <i class="fas fa-plus"></i> Novo Veículo
                 </button>
-                <table class="table table-striped" id="tabelaVeiculos">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome</th>
-                            <th>Placa</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tabelaVeiculos">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Placa</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Aba Relatórios -->
             <div class="tab-pane fade" id="relatorios" role="tabpanel">
-                <h4 class="mb-3">Relatório Detalhado com Margem Geral</h4>
-                <div class="row">
+                <h4 class="mb-3"><i class="fas fa-file-alt me-2 text-warning"></i>Relatórios Detalhados</h4>
+                <div class="row g-3">
                     <div class="col-md-3">
-                        <label>Data Início</label>
-                        <input type="date" id="relInicio" class="form-control" value="">
+                        <label class="form-label">Data Início</label>
+                        <input type="date" id="relInicio" class="form-control">
                     </div>
                     <div class="col-md-3">
-                        <label>Data Fim</label>
-                        <input type="date" id="relFim" class="form-control" value="">
+                        <label class="form-label">Data Fim</label>
+                        <input type="date" id="relFim" class="form-control">
                     </div>
                     <div class="col-md-3">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-warning d-block" onclick="gerarRelatorio()">Gerar Relatório</button>
+                        <label class="form-label">Tipo</label>
+                        <select id="relTipo" class="form-select">
+                            <option value="todos">Todos</option>
+                            <option value="entrada">Entradas</option>
+                            <option value="saida">Saídas</option>
+                        </select>
                     </div>
-                    <div class="col-md-3">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-dark d-block" onclick="gerarPDF()">Exportar PDF</button>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <button class="btn btn-warning" onclick="gerarRelatorio()">
+                            <i class="fas fa-search"></i> Gerar
+                        </button>
+                        <button class="btn btn-dark" onclick="exportarPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                        <button class="btn btn-success" onclick="exportarExcel()">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
                     </div>
                 </div>
                 <hr>
-                <div id="relatorioResultado">
+                <div id="relatorioResultado" class="mt-3">
                     <!-- Resultado do relatório será inserido aqui -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modais -->
-    <!-- Modal Nova Transação -->
+    <!-- Modal Nova/Editar Transação -->
     <div class="modal fade" id="modalTransacao" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title">Nova Transação</h5>
+                    <h5 class="modal-title" id="modalTransacaoTitle">Nova Transação</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formTransacao">
+                        <input type="hidden" id="transacaoId">
                         <div class="mb-3">
-                            <label>Tipo</label>
-                            <select class="form-control" id="tipo" required>
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="tipo" required>
                                 <option value="entrada">Entrada</option>
                                 <option value="saida">Saída</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label>Data</label>
+                            <label class="form-label">Data</label>
                             <input type="date" class="form-control" id="dataTransacao" required>
                         </div>
                         <div class="mb-3">
-                            <label>Valor (R$)</label>
+                            <label class="form-label">Valor (R$)</label>
                             <input type="number" step="0.01" class="form-control" id="valorTransacao" required>
                         </div>
                         <div class="mb-3">
-                            <label>Categoria</label>
+                            <label class="form-label">Categoria</label>
                             <input type="text" class="form-control" id="categoria" placeholder="Ex: Venda de Areia, Manutenção" required>
                         </div>
                         <div class="mb-3">
-                            <label>Descrição</label>
+                            <label class="form-label">Descrição</label>
                             <textarea class="form-control" id="descricao" rows="2"></textarea>
                         </div>
                     </form>
@@ -308,26 +392,27 @@
         </div>
     </div>
 
-    <!-- Modal Novo Combustível -->
+    <!-- Modal Novo/Editar Combustível -->
     <div class="modal fade" id="modalCombustivel" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title">Novo Abastecimento</h5>
+                    <h5 class="modal-title" id="modalCombustivelTitle">Novo Abastecimento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formCombustivel">
+                        <input type="hidden" id="combustivelId">
                         <div class="mb-3">
-                            <label>Veículo</label>
-                            <select class="form-control" id="veiculoComb" required></select>
+                            <label class="form-label">Veículo</label>
+                            <select class="form-select" id="veiculoComb" required></select>
                         </div>
                         <div class="mb-3">
-                            <label>Data</label>
+                            <label class="form-label">Data</label>
                             <input type="date" class="form-control" id="dataComb" required>
                         </div>
                         <div class="mb-3">
-                            <label>Valor (R$)</label>
+                            <label class="form-label">Valor (R$)</label>
                             <input type="number" step="0.01" class="form-control" id="valorComb" required>
                         </div>
                     </form>
@@ -340,22 +425,23 @@
         </div>
     </div>
 
-    <!-- Modal Novo Veículo -->
+    <!-- Modal Novo/Editar Veículo -->
     <div class="modal fade" id="modalVeiculo" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title">Novo Veículo</h5>
+                    <h5 class="modal-title" id="modalVeiculoTitle">Novo Veículo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formVeiculo">
+                        <input type="hidden" id="veiculoId">
                         <div class="mb-3">
-                            <label>Nome do Veículo</label>
+                            <label class="form-label">Nome do Veículo</label>
                             <input type="text" class="form-control" id="nomeVeiculo" placeholder="Ex: Caminhão Mercedes 1113" required>
                         </div>
                         <div class="mb-3">
-                            <label>Placa</label>
+                            <label class="form-label">Placa</label>
                             <input type="text" class="form-control" id="placaVeiculo" placeholder="ABC-1234" required>
                         </div>
                     </form>
@@ -371,7 +457,7 @@
     <!-- Rodapé -->
     <footer class="footer text-center">
         <div class="container">
-            <span>PZ Transportes - Sistema de Gestão Interna v3.0 (Firebase)</span>
+            <span>PZ Transportes - Sistema de Gestão v4.0 (Firebase) - UX/UI Aprimorado</span>
         </div>
     </footer>
 
@@ -389,7 +475,6 @@
             appId: "1:950404250616:web:c947d4366867c6ff57b40d"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -398,7 +483,7 @@
             return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // ==================== FUNÇÕES DE LEITURA (sempre do Firestore) ====================
+        // ==================== FUNÇÕES DE LEITURA ====================
         async function getVeiculos() {
             const snapshot = await db.collection('veiculos').get();
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -428,6 +513,7 @@
                     <td>${t.descricao || ''}</td>
                     <td>R$ ${formatarMoeda(t.valor)}</td>
                     <td>
+                        <button class="btn btn-sm btn-edit me-1" onclick="editarTransacao('${t.id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="excluirTransacao('${t.id}')"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -448,6 +534,7 @@
                     <td>${veiculo.nome}</td>
                     <td>R$ ${formatarMoeda(c.valor)}</td>
                     <td>
+                        <button class="btn btn-sm btn-edit me-1" onclick="editarCombustivel('${c.id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="excluirCombustivel('${c.id}')"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -465,6 +552,7 @@
                     <td>${v.nome}</td>
                     <td>${v.placa}</td>
                     <td>
+                        <button class="btn btn-sm btn-edit me-1" onclick="editarVeiculo('${v.id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="excluirVeiculo('${v.id}')"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -472,7 +560,6 @@
             });
         }
 
-        // Preencher select de veículos nos modais
         async function preencherSelectVeiculos() {
             const select = document.getElementById('veiculoComb');
             const veiculos = await getVeiculos();
@@ -483,30 +570,46 @@
         }
 
         // ==================== CRUD TRANSAÇÕES ====================
-        window.salvarTransacao = async function() {
-            const tipo = document.getElementById('tipo').value;
-            const data = document.getElementById('dataTransacao').value;
-            const valor = parseFloat(document.getElementById('valorTransacao').value);
-            const categoria = document.getElementById('categoria').value;
-            const descricao = document.getElementById('descricao').value;
+        window.limparModalTransacao = function() {
+            document.getElementById('transacaoId').value = '';
+            document.getElementById('formTransacao').reset();
+            document.getElementById('modalTransacaoTitle').innerText = 'Nova Transação';
+        };
 
-            if (!data || !valor || !categoria) {
+        window.editarTransacao = async function(id) {
+            const doc = await db.collection('transacoes').doc(id).get();
+            const t = doc.data();
+            document.getElementById('transacaoId').value = id;
+            document.getElementById('tipo').value = t.tipo;
+            document.getElementById('dataTransacao').value = t.data;
+            document.getElementById('valorTransacao').value = t.valor;
+            document.getElementById('categoria').value = t.categoria;
+            document.getElementById('descricao').value = t.descricao || '';
+            document.getElementById('modalTransacaoTitle').innerText = 'Editar Transação';
+            new bootstrap.Modal(document.getElementById('modalTransacao')).show();
+        };
+
+        window.salvarTransacao = async function() {
+            const id = document.getElementById('transacaoId').value;
+            const dados = {
+                tipo: document.getElementById('tipo').value,
+                data: document.getElementById('dataTransacao').value,
+                valor: parseFloat(document.getElementById('valorTransacao').value),
+                categoria: document.getElementById('categoria').value,
+                descricao: document.getElementById('descricao').value
+            };
+            if (!dados.data || !dados.valor || !dados.categoria) {
                 alert('Preencha todos os campos obrigatórios.');
                 return;
             }
-
-            const nova = {
-                tipo,
-                data,
-                valor,
-                categoria,
-                descricao
-            };
-            await db.collection('transacoes').add(nova);
+            if (id) {
+                await db.collection('transacoes').doc(id).update(dados);
+            } else {
+                await db.collection('transacoes').add(dados);
+            }
             await renderTransacoes();
             await atualizarDashboard();
             bootstrap.Modal.getInstance(document.getElementById('modalTransacao')).hide();
-            document.getElementById('formTransacao').reset();
         };
 
         window.excluirTransacao = async function(id) {
@@ -518,26 +621,42 @@
         };
 
         // ==================== CRUD COMBUSTÍVEL ====================
-        window.salvarCombustivel = async function() {
-            const veiculoId = document.getElementById('veiculoComb').value;
-            const data = document.getElementById('dataComb').value;
-            const valor = parseFloat(document.getElementById('valorComb').value);
+        window.limparModalCombustivel = function() {
+            document.getElementById('combustivelId').value = '';
+            document.getElementById('formCombustivel').reset();
+            document.getElementById('modalCombustivelTitle').innerText = 'Novo Abastecimento';
+        };
 
-            if (!veiculoId || !data || !valor) {
+        window.editarCombustivel = async function(id) {
+            const doc = await db.collection('combustivel').doc(id).get();
+            const c = doc.data();
+            document.getElementById('combustivelId').value = id;
+            document.getElementById('veiculoComb').value = c.veiculoId;
+            document.getElementById('dataComb').value = c.data;
+            document.getElementById('valorComb').value = c.valor;
+            document.getElementById('modalCombustivelTitle').innerText = 'Editar Abastecimento';
+            new bootstrap.Modal(document.getElementById('modalCombustivel')).show();
+        };
+
+        window.salvarCombustivel = async function() {
+            const id = document.getElementById('combustivelId').value;
+            const dados = {
+                veiculoId: document.getElementById('veiculoComb').value,
+                data: document.getElementById('dataComb').value,
+                valor: parseFloat(document.getElementById('valorComb').value)
+            };
+            if (!dados.veiculoId || !dados.data || !dados.valor) {
                 alert('Preencha todos os campos.');
                 return;
             }
-
-            const novo = {
-                veiculoId,
-                data,
-                valor
-            };
-            await db.collection('combustivel').add(novo);
+            if (id) {
+                await db.collection('combustivel').doc(id).update(dados);
+            } else {
+                await db.collection('combustivel').add(dados);
+            }
             await renderCombustivel();
             await atualizarDashboard();
             bootstrap.Modal.getInstance(document.getElementById('modalCombustivel')).hide();
-            document.getElementById('formCombustivel').reset();
         };
 
         window.excluirCombustivel = async function(id) {
@@ -549,25 +668,43 @@
         };
 
         // ==================== CRUD VEÍCULOS ====================
-        window.salvarVeiculo = async function() {
-            const nome = document.getElementById('nomeVeiculo').value;
-            const placa = document.getElementById('placaVeiculo').value;
+        window.limparModalVeiculo = function() {
+            document.getElementById('veiculoId').value = '';
+            document.getElementById('formVeiculo').reset();
+            document.getElementById('modalVeiculoTitle').innerText = 'Novo Veículo';
+        };
 
-            if (!nome || !placa) {
+        window.editarVeiculo = async function(id) {
+            const doc = await db.collection('veiculos').doc(id).get();
+            const v = doc.data();
+            document.getElementById('veiculoId').value = id;
+            document.getElementById('nomeVeiculo').value = v.nome;
+            document.getElementById('placaVeiculo').value = v.placa;
+            document.getElementById('modalVeiculoTitle').innerText = 'Editar Veículo';
+            new bootstrap.Modal(document.getElementById('modalVeiculo')).show();
+        };
+
+        window.salvarVeiculo = async function() {
+            const id = document.getElementById('veiculoId').value;
+            const dados = {
+                nome: document.getElementById('nomeVeiculo').value,
+                placa: document.getElementById('placaVeiculo').value
+            };
+            if (!dados.nome || !dados.placa) {
                 alert('Preencha todos os campos.');
                 return;
             }
-
-            const novo = { nome, placa };
-            await db.collection('veiculos').add(novo);
+            if (id) {
+                await db.collection('veiculos').doc(id).update(dados);
+            } else {
+                await db.collection('veiculos').add(dados);
+            }
             await renderVeiculos();
             await preencherSelectVeiculos();
             bootstrap.Modal.getInstance(document.getElementById('modalVeiculo')).hide();
-            document.getElementById('formVeiculo').reset();
         };
 
         window.excluirVeiculo = async function(id) {
-            // Verificar se há abastecimentos vinculados
             const combustiveis = await getCombustivel();
             if (combustiveis.some(c => c.veiculoId === id)) {
                 alert('Não é possível excluir este veículo pois existem abastecimentos vinculados.');
@@ -586,25 +723,54 @@
             const combustiveis = await getCombustivel();
             const veiculos = await getVeiculos();
 
-            // Usar o mês atual dinamicamente
             const hoje = new Date();
-            const mesAtual = hoje.toISOString().slice(0,7); // formato YYYY-MM
-            const transacoesMes = transacoes.filter(t => t.data.startsWith(mesAtual));
-            const combustivelMes = combustiveis.filter(c => c.data.startsWith(mesAtual));
+            const mesAtual = hoje.toISOString().slice(0,7);
+            const anoAtual = hoje.getFullYear();
+            const mes = hoje.getMonth() + 1;
 
-            const totalEntradas = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-            const totalSaidas = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-            const saldo = totalEntradas - totalSaidas;
+            // Transações do mês atual
+            const transacoesMes = transacoes.filter(t => t.data.startsWith(mesAtual));
+            const entradasMes = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+            const saidasMes = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+            const saldo = entradasMes - saidasMes;
+
+            // Previsão do mês (projeção baseada na média dos últimos 3 meses)
+            const tresMeses = [];
+            for (let i = 1; i <= 3; i++) {
+                let mesPassado = mes - i;
+                let anoPassado = anoAtual;
+                if (mesPassado <= 0) {
+                    mesPassado += 12;
+                    anoPassado--;
+                }
+                const mesStr = `${anoPassado}-${String(mesPassado).padStart(2, '0')}`;
+                const transacoesMesPassado = transacoes.filter(t => t.data.startsWith(mesStr));
+                const entradasPassado = transacoesMesPassado.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+                tresMeses.push(entradasPassado);
+            }
+            const mediaEntradas = tresMeses.reduce((a, b) => a + b, 0) / 3;
+            const previsao = mediaEntradas - saidasMes; // projeção simples
+
+            // Média diária de entradas (considerando dias úteis ou todos os dias)
+            const diasNoMes = new Date(anoAtual, mes, 0).getDate();
+            const mediaDiaria = entradasMes / diasNoMes;
+
+            // Atualizar cards
+            document.getElementById('saldoAtual').innerText = `R$ ${formatarMoeda(saldo)}`;
+            document.getElementById('entradasMes').innerText = `R$ ${formatarMoeda(entradasMes)}`;
+            document.getElementById('saidasMes').innerText = `R$ ${formatarMoeda(saidasMes)}`;
+            document.getElementById('previsaoMes').innerText = `R$ ${formatarMoeda(previsao)}`;
+
             const saldoEl = document.getElementById('saldoAtual');
-            saldoEl.innerText = `R$ ${formatarMoeda(saldo)}`;
             if (saldo < 0) saldoEl.classList.add('saldo-negativo');
             else saldoEl.classList.remove('saldo-negativo');
 
-            const margem = totalEntradas > 0 ? ((saldo / totalEntradas) * 100).toFixed(2) : 0;
+            const margem = entradasMes > 0 ? ((saldo / entradasMes) * 100).toFixed(2) : 0;
             document.getElementById('margemLucro').innerText = `${margem.replace('.', ',')}%`;
 
-            const totalComb = combustivelMes.reduce((acc, c) => acc + c.valor, 0);
+            const totalComb = combustiveis.filter(c => c.data.startsWith(mesAtual)).reduce((acc, c) => acc + c.valor, 0);
             document.getElementById('totalCombustivelMes').innerText = `R$ ${formatarMoeda(totalComb)}`;
+            document.getElementById('mediaDiaria').innerText = `R$ ${formatarMoeda(mediaDiaria)}`;
 
             // Gráfico linha últimos 7 dias
             const ultimos7Dias = [];
@@ -629,16 +795,20 @@
                 data: {
                     labels: ultimos7Dias.map(d => d.substring(5)),
                     datasets: [
-                        { label: 'Entradas', data: entradas7, borderColor: 'green', backgroundColor: 'transparent', tension: 0.3 },
-                        { label: 'Saídas', data: saidas7, borderColor: 'red', backgroundColor: 'transparent', tension: 0.3 }
+                        { label: 'Entradas', data: entradas7, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)', tension: 0.3, fill: true },
+                        { label: 'Saídas', data: saidas7, borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)', tension: 0.3, fill: true }
                     ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
 
             // Gráfico barras consumo por veículo
             const veiculosNomes = veiculos.map(v => v.nome);
             const consumos = veiculos.map(v => {
-                return combustivelMes.filter(c => c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0);
+                return combustiveis.filter(c => c.data.startsWith(mesAtual) && c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0);
             });
 
             if (window.graficoBarras) window.graficoBarras.destroy();
@@ -648,6 +818,10 @@
                 data: {
                     labels: veiculosNomes,
                     datasets: [{ label: 'R$', data: consumos, backgroundColor: '#FFC107' }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
                 }
             });
 
@@ -667,8 +841,9 @@
                 type: 'pie',
                 data: {
                     labels: Object.keys(categoriasEntrada).length ? Object.keys(categoriasEntrada) : ['Sem dados'],
-                    datasets: [{ data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d'] }]
-                }
+                    datasets: [{ data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff'] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
             });
 
             if (window.graficoPizzaSaida) window.graficoPizzaSaida.destroy();
@@ -677,8 +852,9 @@
                 type: 'pie',
                 data: {
                     labels: Object.keys(categoriasSaida).length ? Object.keys(categoriasSaida) : ['Sem dados'],
-                    datasets: [{ data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d'] }]
-                }
+                    datasets: [{ data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff'] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
             });
         }
 
@@ -686,58 +862,71 @@
         window.gerarRelatorio = async function() {
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
+            const tipo = document.getElementById('relTipo').value;
             if (!inicio || !fim) {
                 alert('Selecione o período.');
                 return;
             }
 
             const transacoes = await getTransacoes();
-            const filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            if (tipo !== 'todos') {
+                filtradas = filtradas.filter(t => t.tipo === tipo);
+            }
+
             const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
             const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
             const saldo = entradas - saidas;
             const margem = entradas > 0 ? ((saldo / entradas) * 100).toFixed(2) : 0;
 
             let html = `
-                <h5>Período: ${inicio} a ${fim}</h5>
-                <div class="row">
+                <h5 class="mb-3">Período: ${inicio} a ${fim} | Tipo: ${tipo === 'todos' ? 'Todos' : tipo}</h5>
+                <div class="row g-2 mb-3">
                     <div class="col-md-3">
                         <div class="card bg-light p-2">
-                            <h6>Total Entradas</h6>
-                            <h4 class="text-success">R$ ${formatarMoeda(entradas)}</h4>
+                            <h6 class="text-muted">Total Entradas</h6>
+                            <h5 class="text-success">R$ ${formatarMoeda(entradas)}</h5>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card bg-light p-2">
-                            <h6>Total Saídas</h6>
-                            <h4 class="text-danger">R$ ${formatarMoeda(saidas)}</h4>
+                            <h6 class="text-muted">Total Saídas</h6>
+                            <h5 class="text-danger">R$ ${formatarMoeda(saidas)}</h5>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card bg-light p-2">
-                            <h6>Saldo</h6>
-                            <h4 class="${saldo < 0 ? 'text-danger' : 'text-success'}">R$ ${formatarMoeda(saldo)}</h4>
+                            <h6 class="text-muted">Saldo</h6>
+                            <h5 class="${saldo < 0 ? 'text-danger' : 'text-success'}">R$ ${formatarMoeda(saldo)}</h5>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card bg-light p-2">
-                            <h6>Margem de Lucro</h6>
-                            <h4>${margem.replace('.', ',')}%</h4>
+                            <h6 class="text-muted">Margem</h6>
+                            <h5>${margem.replace('.', ',')}%</h5>
                         </div>
                     </div>
                 </div>
-                <hr>
-                <h6>Transações no período</h6>
-                <table class="table table-sm" id="tabelaRelatorio">
-                    <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>
-                    <tbody>
+                <h6>Transações (${filtradas.length})</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped" id="tabelaRelatorio">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
 
             filtradas.sort((a,b) => a.data.localeCompare(b.data));
             filtradas.forEach(t => {
                 html += `<tr>
                     <td>${t.data}</td>
-                    <td>${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
+                    <td><span class="badge ${t.tipo === 'entrada' ? 'bg-success' : 'bg-danger'}">${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
                     <td>${t.categoria}</td>
                     <td>${t.descricao || ''}</td>
                     <td>R$ ${formatarMoeda(t.valor)}</td>
@@ -748,17 +937,22 @@
             document.getElementById('relatorioResultado').innerHTML = html;
         };
 
-        // ==================== GERAR PDF ====================
-        window.gerarPDF = async function() {
+        // ==================== EXPORTAÇÃO ====================
+        window.exportarPDF = async function() {
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
+            const tipo = document.getElementById('relTipo').value;
             if (!inicio || !fim) {
                 alert('Selecione o período.');
                 return;
             }
 
             const transacoes = await getTransacoes();
-            const filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            if (tipo !== 'todos') {
+                filtradas = filtradas.filter(t => t.tipo === tipo);
+            }
+
             const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
             const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
             const saldo = entradas - saidas;
@@ -801,16 +995,43 @@
             doc.save(`relatorio_pz_${inicio}_a_${fim}.pdf`);
         };
 
+        window.exportarExcel = async function() {
+            const inicio = document.getElementById('relInicio').value;
+            const fim = document.getElementById('relFim').value;
+            const tipo = document.getElementById('relTipo').value;
+            if (!inicio || !fim) {
+                alert('Selecione o período.');
+                return;
+            }
+
+            const transacoes = await getTransacoes();
+            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            if (tipo !== 'todos') {
+                filtradas = filtradas.filter(t => t.tipo === tipo);
+            }
+
+            const dados = filtradas.map(t => ({
+                Data: t.data,
+                Tipo: t.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                Categoria: t.categoria,
+                Descrição: t.descricao || '',
+                Valor: t.valor
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+            XLSX.writeFile(wb, `relatorio_pz_${inicio}_a_${fim}.xlsx`);
+        };
+
         // ==================== INICIALIZAÇÃO ====================
         (async function init() {
-            // Apenas carrega os dados existentes (se houver) - sem inserir exemplos
             await renderTransacoes();
             await renderCombustivel();
             await renderVeiculos();
             await preencherSelectVeiculos();
             await atualizarDashboard();
 
-            // Reatualizar ao abrir abas
             document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
                 btn.addEventListener('shown.bs.tab', async function() {
                     if (this.id === 'dashboard-tab') await atualizarDashboard();
