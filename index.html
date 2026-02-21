@@ -480,7 +480,7 @@
     <!-- Rodapé -->
     <footer class="footer text-center">
         <div class="container">
-            <span>PZ Transportes - Sistema de Gestão v6.1 (Firebase) - Versão Final</span>
+            <span>PZ Transportes - Sistema de Gestão v6.2 (Firebase) - Relatórios Corrigidos</span>
         </div>
     </footer>
 
@@ -909,7 +909,7 @@
             });
         }
 
-        // ==================== RELATÓRIOS ====================
+        // ==================== RELATÓRIOS CORRIGIDOS ====================
         window.gerarRelatorio = async function() {
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
@@ -936,23 +936,44 @@
                 });
                 html += `</tbody></table>`;
             } else {
-                // Relatório de transações
+                // Relatório de transações (entrada, saida ou todos)
                 const transacoes = await getTransacoes();
                 let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
-                if (tipo !== 'todos') filtradas = filtradas.filter(t => t.tipo === tipo);
+                if (tipo !== 'todos') {
+                    filtradas = filtradas.filter(t => t.tipo === tipo);
+                }
 
+                // Calcular totais
                 const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-                const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-                const saldo = entradas - saidas;
-                const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
+                const saidasOperacionais = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
 
-                html += `<div class="row g-2 mb-3">
-                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Entradas</h6><h5 class="text-success">R$ ${formatarMoeda(entradas)}</h5></div></div>
-                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Saídas</h6><h5 class="text-danger">R$ ${formatarMoeda(saidas)}</h5></div></div>
-                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Saldo</h6><h5 class="${saldo<0?'text-danger':'text-success'}">R$ ${formatarMoeda(saldo)}</h5></div></div>
-                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Margem</h6><h5>${margem.toFixed(2).replace('.',',')}%</h5></div></div>
-                </div>
-                <table class="table table-sm"><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>`;
+                // Se for "todos", incluir combustível no cálculo do saldo e margem
+                if (tipo === 'todos') {
+                    const combustiveis = await getCombustivel();
+                    const combustivelPeriodo = combustiveis.filter(c => c.data >= inicio && c.data <= fim);
+                    const totalCombustivel = combustivelPeriodo.reduce((acc, c) => acc + c.valor, 0);
+                    const saidasTotais = saidasOperacionais + totalCombustivel;
+                    const saldo = entradas - saidasTotais;
+                    const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
+
+                    html += `<div class="row g-2 mb-3">
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Entradas</h6><h5 class="text-success">R$ ${formatarMoeda(entradas)}</h5></div></div>
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Saídas (Oper.)</h6><h5 class="text-danger">R$ ${formatarMoeda(saidasOperacionais)}</h5></div></div>
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Combustível</h6><h5 class="text-warning">R$ ${formatarMoeda(totalCombustivel)}</h5></div></div>
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Saídas Totais</h6><h5 class="text-danger">R$ ${formatarMoeda(saidasTotais)}</h5></div></div>
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Saldo</h6><h5 class="${saldo<0?'text-danger':'text-success'}">R$ ${formatarMoeda(saldo)}</h5></div></div>
+                        <div class="col-md-2"><div class="card bg-light p-2"><h6>Margem</h6><h5>${margem.toFixed(2).replace('.',',')}%</h5></div></div>
+                    </div>`;
+                } else {
+                    // Para "entrada" ou "saida", mostrar apenas os totais do tipo
+                    const total = tipo === 'entrada' ? entradas : saidasOperacionais;
+                    html += `<div class="row g-2 mb-3">
+                        <div class="col-md-12"><div class="card bg-light p-2"><h6>Total ${tipo === 'entrada' ? 'Entradas' : 'Saídas'}</h6><h5 class="${tipo === 'entrada' ? 'text-success' : 'text-danger'}">R$ ${formatarMoeda(total)}</h5></div></div>
+                    </div>`;
+                }
+
+                // Tabela de transações
+                html += `<table class="table table-sm"><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>`;
                 filtradas.sort((a,b) => a.data.localeCompare(b.data));
                 filtradas.forEach(t => {
                     html += `<tr><td>${t.data}</td><td>${t.tipo==='entrada'?'Entrada':'Saída'}</td><td>${t.categoria}</td><td>${t.descricao||''}</td><td>R$ ${formatarMoeda(t.valor)}</td></tr>`;
@@ -992,23 +1013,44 @@
                 const transacoes = await getTransacoes();
                 let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
                 if (tipo !== 'todos') filtradas = filtradas.filter(t => t.tipo === tipo);
-                const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-                const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-                const saldo = entradas - saidas;
-                const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
 
-                doc.setFontSize(10).text(`Entradas: R$ ${formatarMoeda(entradas)}`,14,40);
-                doc.text(`Saídas: R$ ${formatarMoeda(saidas)}`,14,46);
-                doc.text(`Saldo: R$ ${formatarMoeda(saldo)}`,14,52);
-                doc.text(`Margem: ${margem.toFixed(2).replace('.',',')}%`,14,58);
-                doc.autoTable({
-                    startY: 65,
-                    head: [['Data','Tipo','Categoria','Descrição','Valor']],
-                    body: filtradas.sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[
-                        t.data, t.tipo==='entrada'?'Entrada':'Saída', t.categoria, t.descricao||'', formatarMoeda(t.valor)
-                    ]),
-                    headStyles: { fillColor: [52,58,64] }
-                });
+                const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+                const saidasOperacionais = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+
+                if (tipo === 'todos') {
+                    const combustiveis = await getCombustivel();
+                    const combustivelPeriodo = combustiveis.filter(c => c.data >= inicio && c.data <= fim);
+                    const totalCombustivel = combustivelPeriodo.reduce((acc, c) => acc + c.valor, 0);
+                    const saidasTotais = saidasOperacionais + totalCombustivel;
+                    const saldo = entradas - saidasTotais;
+                    const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
+
+                    doc.setFontSize(10).text(`Entradas: R$ ${formatarMoeda(entradas)}`,14,40);
+                    doc.text(`Saídas Operacionais: R$ ${formatarMoeda(saidasOperacionais)}`,14,46);
+                    doc.text(`Combustível: R$ ${formatarMoeda(totalCombustivel)}`,14,52);
+                    doc.text(`Saídas Totais: R$ ${formatarMoeda(saidasTotais)}`,14,58);
+                    doc.text(`Saldo: R$ ${formatarMoeda(saldo)}`,14,64);
+                    doc.text(`Margem: ${margem.toFixed(2).replace('.',',')}%`,14,70);
+                    doc.autoTable({
+                        startY: 80,
+                        head: [['Data','Tipo','Categoria','Descrição','Valor']],
+                        body: filtradas.sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[
+                            t.data, t.tipo==='entrada'?'Entrada':'Saída', t.categoria, t.descricao||'', formatarMoeda(t.valor)
+                        ]),
+                        headStyles: { fillColor: [52,58,64] }
+                    });
+                } else {
+                    const total = tipo === 'entrada' ? entradas : saidasOperacionais;
+                    doc.setFontSize(10).text(`Total ${tipo === 'entrada' ? 'Entradas' : 'Saídas'}: R$ ${formatarMoeda(total)}`,14,40);
+                    doc.autoTable({
+                        startY: 50,
+                        head: [['Data','Tipo','Categoria','Descrição','Valor']],
+                        body: filtradas.sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[
+                            t.data, t.tipo==='entrada'?'Entrada':'Saída', t.categoria, t.descricao||'', formatarMoeda(t.valor)
+                        ]),
+                        headStyles: { fillColor: [52,58,64] }
+                    });
+                }
             }
             doc.save(`relatorio_${inicio}_a_${fim}_${tipo}.pdf`);
         };
