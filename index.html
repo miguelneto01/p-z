@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PZ Transportes - Sistema de Gestão</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- jsPDF e autoTable para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-yellow: #FFC107;
+            --dark-gray: #343a40;
+        }
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .bg-primary-yellow {
+            background-color: var(--primary-yellow) !important;
+        }
+        .text-primary-yellow {
+            color: var(--primary-yellow);
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border: none;
+        }
+        .btn-warning {
+            background-color: var(--primary-yellow);
+            border-color: var(--primary-yellow);
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+            border-color: #d39e00;
+        }
+        .saldo-negativo {
+            color: red !important;
+            font-weight: bold;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-yellow);
+            border-color: var(--primary-yellow);
+            color: #000;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .table thead {
+            background-color: var(--dark-gray);
+            color: white;
+        }
+        .footer {
+            background-color: var(--dark-gray);
+            color: white;
+            padding: 15px 0;
+            margin-top: 30px;
+        }
+        .loading {
+            cursor: wait;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-truck me-2 text-warning"></i>PZ TRANSPORTES
+            </span>
+            <span class="text-white-50">Extração de minerais: areia, barro, arisco, brita</span>
+        </div>
+    </nav>
+
+    <!-- Conteúdo principal -->
+    <div class="container mt-4">
+        <!-- Abas de navegação -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Dashboard</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="transacoes-tab" data-bs-toggle="tab" data-bs-target="#transacoes" type="button" role="tab">Transações</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="combustivel-tab" data-bs-toggle="tab" data-bs-target="#combustivel" type="button" role="tab">Combustível</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="veiculos-tab" data-bs-toggle="tab" data-bs-target="#veiculos" type="button" role="tab">Veículos</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="relatorios-tab" data-bs-toggle="tab" data-bs-target="#relatorios" type="button" role="tab">Relatórios</button>
+            </li>
+        </ul>
+
+        <!-- Conteúdo das abas -->
+        <div class="tab-content p-3 border border-top-0 bg-white rounded-bottom" id="myTabContent">
+            <!-- Aba Dashboard -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <h4 class="mb-3">Dashboard</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-dark mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Saldo Atual (mês)</h5>
+                                <h3 id="saldoAtual" class="fw-bold">R$ 0,00</h3>
+                                <small>Entradas - Saídas</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-dark text-white mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Margem de Lucro</h5>
+                                <h3 id="margemLucro" class="fw-bold">0%</h3>
+                                <small>Lucro / Entradas</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Combustível (mês)</h5>
+                                <h3 id="totalCombustivelMes" class="fw-bold">R$ 0,00</h3>
+                                <small>Abastecimentos no mês</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5>Entradas vs Saídas (últimos 7 dias)</h5>
+                            <canvas id="graficoLinha" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5>Consumo de Combustível por Veículo (mês)</h5>
+                            <canvas id="graficoBarras" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5>Materiais mais movimentados (entradas)</h5>
+                            <canvas id="graficoPizzaEntrada" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3">
+                            <h5>Materiais mais movimentados (saídas)</h5>
+                            <canvas id="graficoPizzaSaida" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Transações -->
+            <div class="tab-pane fade" id="transacoes" role="tabpanel">
+                <h4 class="mb-3">Controle de Transações (Caixa)</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalTransacao">
+                    <i class="fas fa-plus"></i> Nova Transação
+                </button>
+                <table class="table table-striped table-hover" id="tabelaTransacoes">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Categoria</th>
+                            <th>Descrição</th>
+                            <th>Valor (R$)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Aba Combustível -->
+            <div class="tab-pane fade" id="combustivel" role="tabpanel">
+                <h4 class="mb-3">Controle de Combustível</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalCombustivel">
+                    <i class="fas fa-plus"></i> Novo Abastecimento
+                </button>
+                <table class="table table-striped" id="tabelaCombustivel">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Veículo</th>
+                            <th>Valor (R$)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Aba Veículos -->
+            <div class="tab-pane fade" id="veiculos" role="tabpanel">
+                <h4 class="mb-3">Veículos</h4>
+                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalVeiculo">
+                    <i class="fas fa-plus"></i> Novo Veículo
+                </button>
+                <table class="table table-striped" id="tabelaVeiculos">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Placa</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Aba Relatórios -->
+            <div class="tab-pane fade" id="relatorios" role="tabpanel">
+                <h4 class="mb-3">Relatório Detalhado com Margem Geral</h4>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Data Início</label>
+                        <input type="date" id="relInicio" class="form-control" value="">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Data Fim</label>
+                        <input type="date" id="relFim" class="form-control" value="">
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-warning d-block" onclick="gerarRelatorio()">Gerar Relatório</button>
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-dark d-block" onclick="gerarPDF()">Exportar PDF</button>
+                    </div>
+                </div>
+                <hr>
+                <div id="relatorioResultado">
+                    <!-- Resultado do relatório será inserido aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modais -->
+    <!-- Modal Nova Transação -->
+    <div class="modal fade" id="modalTransacao" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Nova Transação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formTransacao">
+                        <div class="mb-3">
+                            <label>Tipo</label>
+                            <select class="form-control" id="tipo" required>
+                                <option value="entrada">Entrada</option>
+                                <option value="saida">Saída</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Data</label>
+                            <input type="date" class="form-control" id="dataTransacao" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Valor (R$)</label>
+                            <input type="number" step="0.01" class="form-control" id="valorTransacao" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Categoria</label>
+                            <input type="text" class="form-control" id="categoria" placeholder="Ex: Venda de Areia, Manutenção" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Descrição</label>
+                            <textarea class="form-control" id="descricao" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="salvarTransacao()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Combustível -->
+    <div class="modal fade" id="modalCombustivel" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Novo Abastecimento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCombustivel">
+                        <div class="mb-3">
+                            <label>Veículo</label>
+                            <select class="form-control" id="veiculoComb" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Data</label>
+                            <input type="date" class="form-control" id="dataComb" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Valor (R$)</label>
+                            <input type="number" step="0.01" class="form-control" id="valorComb" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="salvarCombustivel()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Veículo -->
+    <div class="modal fade" id="modalVeiculo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Novo Veículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formVeiculo">
+                        <div class="mb-3">
+                            <label>Nome do Veículo</label>
+                            <input type="text" class="form-control" id="nomeVeiculo" placeholder="Ex: Caminhão Mercedes 1113" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Placa</label>
+                            <input type="text" class="form-control" id="placaVeiculo" placeholder="ABC-1234" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" onclick="salvarVeiculo()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="footer text-center">
+        <div class="container">
+            <span>PZ Transportes - Sistema de Gestão Interna v3.0 (Firebase)</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ==================== CONFIGURAÇÃO FIREBASE ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAE_uLbq_NrtqTL7yr55xdKVnz6d6nd_Ic",
+            authDomain: "pztransp.firebaseapp.com",
+            projectId: "pztransp",
+            storageBucket: "pztransp.firebasestorage.app",
+            messagingSenderId: "950404250616",
+            appId: "1:950404250616:web:c947d4366867c6ff57b40d"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ==================== FUNÇÕES DE FORMATAÇÃO ====================
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // ==================== FUNÇÕES DE LEITURA (sempre do Firestore) ====================
+        async function getVeiculos() {
+            const snapshot = await db.collection('veiculos').get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        async function getTransacoes() {
+            const snapshot = await db.collection('transacoes').get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        async function getCombustivel() {
+            const snapshot = await db.collection('combustivel').get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        // ==================== RENDERIZAÇÃO DE TABELAS ====================
+        async function renderTransacoes() {
+            const tbody = document.querySelector('#tabelaTransacoes tbody');
+            const transacoes = await getTransacoes();
+            tbody.innerHTML = '';
+            transacoes.sort((a,b) => new Date(b.data) - new Date(a.data));
+            transacoes.forEach(t => {
+                const row = `<tr>
+                    <td>${t.data}</td>
+                    <td><span class="badge ${t.tipo === 'entrada' ? 'bg-success' : 'bg-danger'}">${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
+                    <td>${t.categoria}</td>
+                    <td>${t.descricao || ''}</td>
+                    <td>R$ ${formatarMoeda(t.valor)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="excluirTransacao('${t.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function renderCombustivel() {
+            const tbody = document.querySelector('#tabelaCombustivel tbody');
+            const combustiveis = await getCombustivel();
+            const veiculos = await getVeiculos();
+            tbody.innerHTML = '';
+            combustiveis.sort((a,b) => new Date(b.data) - new Date(a.data));
+            combustiveis.forEach(c => {
+                const veiculo = veiculos.find(v => v.id === c.veiculoId) || { nome: 'Desconhecido' };
+                const row = `<tr>
+                    <td>${c.data}</td>
+                    <td>${veiculo.nome}</td>
+                    <td>R$ ${formatarMoeda(c.valor)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="excluirCombustivel('${c.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function renderVeiculos() {
+            const tbody = document.querySelector('#tabelaVeiculos tbody');
+            const veiculos = await getVeiculos();
+            tbody.innerHTML = '';
+            veiculos.forEach(v => {
+                const row = `<tr>
+                    <td>${v.id.substring(0,6)}...</td>
+                    <td>${v.nome}</td>
+                    <td>${v.placa}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="excluirVeiculo('${v.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Preencher select de veículos nos modais
+        async function preencherSelectVeiculos() {
+            const select = document.getElementById('veiculoComb');
+            const veiculos = await getVeiculos();
+            select.innerHTML = '<option value="">Selecione...</option>';
+            veiculos.forEach(v => {
+                select.innerHTML += `<option value="${v.id}">${v.nome} - ${v.placa}</option>`;
+            });
+        }
+
+        // ==================== CRUD TRANSAÇÕES ====================
+        window.salvarTransacao = async function() {
+            const tipo = document.getElementById('tipo').value;
+            const data = document.getElementById('dataTransacao').value;
+            const valor = parseFloat(document.getElementById('valorTransacao').value);
+            const categoria = document.getElementById('categoria').value;
+            const descricao = document.getElementById('descricao').value;
+
+            if (!data || !valor || !categoria) {
+                alert('Preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            const nova = {
+                tipo,
+                data,
+                valor,
+                categoria,
+                descricao
+            };
+            await db.collection('transacoes').add(nova);
+            await renderTransacoes();
+            await atualizarDashboard();
+            bootstrap.Modal.getInstance(document.getElementById('modalTransacao')).hide();
+            document.getElementById('formTransacao').reset();
+        };
+
+        window.excluirTransacao = async function(id) {
+            if (confirm('Deseja realmente excluir esta transação?')) {
+                await db.collection('transacoes').doc(id).delete();
+                await renderTransacoes();
+                await atualizarDashboard();
+            }
+        };
+
+        // ==================== CRUD COMBUSTÍVEL ====================
+        window.salvarCombustivel = async function() {
+            const veiculoId = document.getElementById('veiculoComb').value;
+            const data = document.getElementById('dataComb').value;
+            const valor = parseFloat(document.getElementById('valorComb').value);
+
+            if (!veiculoId || !data || !valor) {
+                alert('Preencha todos os campos.');
+                return;
+            }
+
+            const novo = {
+                veiculoId,
+                data,
+                valor
+            };
+            await db.collection('combustivel').add(novo);
+            await renderCombustivel();
+            await atualizarDashboard();
+            bootstrap.Modal.getInstance(document.getElementById('modalCombustivel')).hide();
+            document.getElementById('formCombustivel').reset();
+        };
+
+        window.excluirCombustivel = async function(id) {
+            if (confirm('Deseja realmente excluir este abastecimento?')) {
+                await db.collection('combustivel').doc(id).delete();
+                await renderCombustivel();
+                await atualizarDashboard();
+            }
+        };
+
+        // ==================== CRUD VEÍCULOS ====================
+        window.salvarVeiculo = async function() {
+            const nome = document.getElementById('nomeVeiculo').value;
+            const placa = document.getElementById('placaVeiculo').value;
+
+            if (!nome || !placa) {
+                alert('Preencha todos os campos.');
+                return;
+            }
+
+            const novo = { nome, placa };
+            await db.collection('veiculos').add(novo);
+            await renderVeiculos();
+            await preencherSelectVeiculos();
+            bootstrap.Modal.getInstance(document.getElementById('modalVeiculo')).hide();
+            document.getElementById('formVeiculo').reset();
+        };
+
+        window.excluirVeiculo = async function(id) {
+            // Verificar se há abastecimentos vinculados
+            const combustiveis = await getCombustivel();
+            if (combustiveis.some(c => c.veiculoId === id)) {
+                alert('Não é possível excluir este veículo pois existem abastecimentos vinculados.');
+                return;
+            }
+            if (confirm('Deseja realmente excluir este veículo?')) {
+                await db.collection('veiculos').doc(id).delete();
+                await renderVeiculos();
+                await preencherSelectVeiculos();
+            }
+        };
+
+        // ==================== DASHBOARD ====================
+        async function atualizarDashboard() {
+            const transacoes = await getTransacoes();
+            const combustiveis = await getCombustivel();
+            const veiculos = await getVeiculos();
+
+            // Usar o mês atual dinamicamente
+            const hoje = new Date();
+            const mesAtual = hoje.toISOString().slice(0,7); // formato YYYY-MM
+            const transacoesMes = transacoes.filter(t => t.data.startsWith(mesAtual));
+            const combustivelMes = combustiveis.filter(c => c.data.startsWith(mesAtual));
+
+            const totalEntradas = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+            const totalSaidas = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+            const saldo = totalEntradas - totalSaidas;
+            const saldoEl = document.getElementById('saldoAtual');
+            saldoEl.innerText = `R$ ${formatarMoeda(saldo)}`;
+            if (saldo < 0) saldoEl.classList.add('saldo-negativo');
+            else saldoEl.classList.remove('saldo-negativo');
+
+            const margem = totalEntradas > 0 ? ((saldo / totalEntradas) * 100).toFixed(2) : 0;
+            document.getElementById('margemLucro').innerText = `${margem.replace('.', ',')}%`;
+
+            const totalComb = combustivelMes.reduce((acc, c) => acc + c.valor, 0);
+            document.getElementById('totalCombustivelMes').innerText = `R$ ${formatarMoeda(totalComb)}`;
+
+            // Gráfico linha últimos 7 dias
+            const ultimos7Dias = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(hoje);
+                d.setDate(hoje.getDate() - i);
+                const diaStr = d.toISOString().split('T')[0];
+                ultimos7Dias.push(diaStr);
+            }
+
+            const entradas7 = ultimos7Dias.map(dia => {
+                return transacoes.filter(t => t.data === dia && t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+            });
+            const saidas7 = ultimos7Dias.map(dia => {
+                return transacoes.filter(t => t.data === dia && t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+            });
+
+            if (window.graficoLinha) window.graficoLinha.destroy();
+            const ctxLinha = document.getElementById('graficoLinha').getContext('2d');
+            window.graficoLinha = new Chart(ctxLinha, {
+                type: 'line',
+                data: {
+                    labels: ultimos7Dias.map(d => d.substring(5)),
+                    datasets: [
+                        { label: 'Entradas', data: entradas7, borderColor: 'green', backgroundColor: 'transparent', tension: 0.3 },
+                        { label: 'Saídas', data: saidas7, borderColor: 'red', backgroundColor: 'transparent', tension: 0.3 }
+                    ]
+                }
+            });
+
+            // Gráfico barras consumo por veículo
+            const veiculosNomes = veiculos.map(v => v.nome);
+            const consumos = veiculos.map(v => {
+                return combustivelMes.filter(c => c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0);
+            });
+
+            if (window.graficoBarras) window.graficoBarras.destroy();
+            const ctxBarras = document.getElementById('graficoBarras').getContext('2d');
+            window.graficoBarras = new Chart(ctxBarras, {
+                type: 'bar',
+                data: {
+                    labels: veiculosNomes,
+                    datasets: [{ label: 'R$', data: consumos, backgroundColor: '#FFC107' }]
+                }
+            });
+
+            // Gráficos pizza
+            const categoriasEntrada = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => {
+                acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
+                return acc;
+            }, {});
+            const categoriasSaida = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => {
+                acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
+                return acc;
+            }, {});
+
+            if (window.graficoPizzaEntrada) window.graficoPizzaEntrada.destroy();
+            const ctxPizzaEnt = document.getElementById('graficoPizzaEntrada').getContext('2d');
+            window.graficoPizzaEntrada = new Chart(ctxPizzaEnt, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(categoriasEntrada).length ? Object.keys(categoriasEntrada) : ['Sem dados'],
+                    datasets: [{ data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d'] }]
+                }
+            });
+
+            if (window.graficoPizzaSaida) window.graficoPizzaSaida.destroy();
+            const ctxPizzaSai = document.getElementById('graficoPizzaSaida').getContext('2d');
+            window.graficoPizzaSaida = new Chart(ctxPizzaSai, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(categoriasSaida).length ? Object.keys(categoriasSaida) : ['Sem dados'],
+                    datasets: [{ data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d'] }]
+                }
+            });
+        }
+
+        // ==================== RELATÓRIOS ====================
+        window.gerarRelatorio = async function() {
+            const inicio = document.getElementById('relInicio').value;
+            const fim = document.getElementById('relFim').value;
+            if (!inicio || !fim) {
+                alert('Selecione o período.');
+                return;
+            }
+
+            const transacoes = await getTransacoes();
+            const filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+            const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+            const saldo = entradas - saidas;
+            const margem = entradas > 0 ? ((saldo / entradas) * 100).toFixed(2) : 0;
+
+            let html = `
+                <h5>Período: ${inicio} a ${fim}</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-light p-2">
+                            <h6>Total Entradas</h6>
+                            <h4 class="text-success">R$ ${formatarMoeda(entradas)}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light p-2">
+                            <h6>Total Saídas</h6>
+                            <h4 class="text-danger">R$ ${formatarMoeda(saidas)}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light p-2">
+                            <h6>Saldo</h6>
+                            <h4 class="${saldo < 0 ? 'text-danger' : 'text-success'}">R$ ${formatarMoeda(saldo)}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light p-2">
+                            <h6>Margem de Lucro</h6>
+                            <h4>${margem.replace('.', ',')}%</h4>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h6>Transações no período</h6>
+                <table class="table table-sm" id="tabelaRelatorio">
+                    <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead>
+                    <tbody>
+            `;
+
+            filtradas.sort((a,b) => a.data.localeCompare(b.data));
+            filtradas.forEach(t => {
+                html += `<tr>
+                    <td>${t.data}</td>
+                    <td>${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
+                    <td>${t.categoria}</td>
+                    <td>${t.descricao || ''}</td>
+                    <td>R$ ${formatarMoeda(t.valor)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+
+            document.getElementById('relatorioResultado').innerHTML = html;
+        };
+
+        // ==================== GERAR PDF ====================
+        window.gerarPDF = async function() {
+            const inicio = document.getElementById('relInicio').value;
+            const fim = document.getElementById('relFim').value;
+            if (!inicio || !fim) {
+                alert('Selecione o período.');
+                return;
+            }
+
+            const transacoes = await getTransacoes();
+            const filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+            const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+            const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+            const saldo = entradas - saidas;
+            const margem = entradas > 0 ? ((saldo / entradas) * 100).toFixed(2) : 0;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.setTextColor(255, 193, 7);
+            doc.text('PZ Transportes', 14, 20);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Relatório de Transações - ${inicio} a ${fim}`, 14, 30);
+
+            doc.setFontSize(10);
+            doc.text(`Total Entradas: R$ ${formatarMoeda(entradas)}`, 14, 40);
+            doc.text(`Total Saídas: R$ ${formatarMoeda(saidas)}`, 14, 46);
+            doc.text(`Saldo: R$ ${formatarMoeda(saldo)}`, 14, 52);
+            doc.text(`Margem de Lucro: ${margem.replace('.', ',')}%`, 14, 58);
+
+            const colunas = ['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor (R$)'];
+            const linhas = filtradas.sort((a,b) => a.data.localeCompare(b.data)).map(t => [
+                t.data,
+                t.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                t.categoria,
+                t.descricao || '',
+                formatarMoeda(t.valor)
+            ]);
+
+            doc.autoTable({
+                startY: 65,
+                head: [colunas],
+                body: linhas,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 58, 64] },
+                styles: { fontSize: 8 }
+            });
+
+            doc.save(`relatorio_pz_${inicio}_a_${fim}.pdf`);
+        };
+
+        // ==================== INICIALIZAÇÃO ====================
+        (async function init() {
+            // Apenas carrega os dados existentes (se houver) - sem inserir exemplos
+            await renderTransacoes();
+            await renderCombustivel();
+            await renderVeiculos();
+            await preencherSelectVeiculos();
+            await atualizarDashboard();
+
+            // Reatualizar ao abrir abas
+            document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', async function() {
+                    if (this.id === 'dashboard-tab') await atualizarDashboard();
+                    if (this.id === 'transacoes-tab') await renderTransacoes();
+                    if (this.id === 'combustivel-tab') await renderCombustivel();
+                    if (this.id === 'veiculos-tab') await renderVeiculos();
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
