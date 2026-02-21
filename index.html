@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Plugin para efeito 3D (opcional, apenas para sombra) -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <!-- jsPDF e autoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -95,9 +93,14 @@
         .search-box {
             max-width: 300px;
         }
-        /* Efeito 3D nos gráficos de pizza */
+        .search-wrapper {
+            display: flex;
+            gap: 5px;
+        }
         .chart-container {
-            filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));
+            position: relative;
+            height: 250px;
+            width: 100%;
         }
     </style>
 </head>
@@ -224,17 +227,17 @@
                 <div class="row mt-4 g-3">
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5><i class="fas fa-chart-line me-2 text-warning"></i>Entradas vs Saídas (últimos 7 dias)</h5>
+                            <h5 class="text-center"><i class="fas fa-chart-line me-2 text-warning"></i>Entradas vs Saídas (últimos 7 dias)</h5>
                             <div class="chart-container">
-                                <canvas id="graficoLinha" style="height: 250px; width:100%;"></canvas>
+                                <canvas id="graficoLinha"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5><i class="fas fa-truck me-2 text-warning"></i>Consumo de Combustível por Veículo (mês)</h5>
+                            <h5 class="text-center"><i class="fas fa-truck me-2 text-warning"></i>Consumo de Combustível por Veículo (mês)</h5>
                             <div class="chart-container">
-                                <canvas id="graficoBarras" style="height: 250px; width:100%;"></canvas>
+                                <canvas id="graficoBarras"></canvas>
                             </div>
                         </div>
                     </div>
@@ -242,17 +245,17 @@
                 <div class="row mt-3 g-3">
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (entradas)</h5>
-                            <div class="chart-container" style="filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));">
-                                <canvas id="graficoPizzaEntrada" style="height: 250px; width:100%;"></canvas>
+                            <h5 class="text-center"><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (entradas)</h5>
+                            <div class="chart-container">
+                                <canvas id="graficoPizzaEntrada"></canvas>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
-                            <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (saídas)</h5>
-                            <div class="chart-container" style="filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));">
-                                <canvas id="graficoPizzaSaida" style="height: 250px; width:100%;"></canvas>
+                            <h5 class="text-center"><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (saídas)</h5>
+                            <div class="chart-container">
+                                <canvas id="graficoPizzaSaida"></canvas>
                             </div>
                         </div>
                     </div>
@@ -266,8 +269,9 @@
                     <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalTransacao" onclick="limparModalTransacao()">
                         <i class="fas fa-plus"></i> Nova Transação
                     </button>
-                    <div class="search-box">
-                        <input type="text" id="buscaTransacoes" class="form-control" placeholder="Buscar por descrição, categoria ou data...">
+                    <div class="search-wrapper">
+                        <input type="text" id="buscaTransacoes" class="form-control" placeholder="Buscar...">
+                        <button class="btn btn-outline-secondary" onclick="filtrarTransacoes()"><i class="fas fa-search"></i></button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -294,8 +298,9 @@
                     <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalCombustivel" onclick="limparModalCombustivel()">
                         <i class="fas fa-plus"></i> Novo Abastecimento
                     </button>
-                    <div class="search-box">
-                        <input type="text" id="buscaCombustivel" class="form-control" placeholder="Buscar por veículo ou data...">
+                    <div class="search-wrapper">
+                        <input type="text" id="buscaCombustivel" class="form-control" placeholder="Buscar...">
+                        <button class="btn btn-outline-secondary" onclick="filtrarCombustivel()"><i class="fas fa-search"></i></button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -475,7 +480,7 @@
     <!-- Rodapé -->
     <footer class="footer text-center">
         <div class="container">
-            <span>PZ Transportes - Sistema de Gestão v6.0 (Firebase) - Versão Final</span>
+            <span>PZ Transportes - Sistema de Gestão v6.1 (Firebase) - Versão Final</span>
         </div>
     </footer>
 
@@ -514,20 +519,32 @@
             return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
-        // ==================== VARIÁVEIS GLOBAIS PARA FILTRO ====================
+        // ==================== VARIÁVEIS GLOBAIS ====================
         let todasTransacoes = [];
         let todoCombustivel = [];
+        let termoBuscaTransacoes = '';
+        let termoBuscaCombustivel = '';
+
+        // ==================== FUNÇÕES DE FILTRO ====================
+        window.filtrarTransacoes = function() {
+            termoBuscaTransacoes = document.getElementById('buscaTransacoes').value.toLowerCase();
+            renderTransacoes();
+        };
+
+        window.filtrarCombustivel = function() {
+            termoBuscaCombustivel = document.getElementById('buscaCombustivel').value.toLowerCase();
+            renderCombustivel();
+        };
 
         // ==================== RENDER COM FILTRO ====================
         async function renderTransacoes() {
             const tbody = document.querySelector('#tabelaTransacoes tbody');
-            const busca = document.getElementById('buscaTransacoes').value.toLowerCase();
             const transacoes = await getTransacoes();
             todasTransacoes = transacoes;
             const filtradas = transacoes.filter(t => 
-                (t.descricao?.toLowerCase().includes(busca) || 
-                t.categoria?.toLowerCase().includes(busca) ||
-                t.data.includes(busca))
+                (t.descricao?.toLowerCase().includes(termoBuscaTransacoes) || 
+                t.categoria?.toLowerCase().includes(termoBuscaTransacoes) ||
+                t.data.includes(termoBuscaTransacoes))
             );
             filtradas.sort((a,b) => new Date(b.data) - new Date(a.data));
             tbody.innerHTML = '';
@@ -549,13 +566,12 @@
 
         async function renderCombustivel() {
             const tbody = document.querySelector('#tabelaCombustivel tbody');
-            const busca = document.getElementById('buscaCombustivel').value.toLowerCase();
             const combustiveis = await getCombustivel();
             todoCombustivel = combustiveis;
             const veiculos = await getVeiculos();
             const filtradas = combustiveis.filter(c => {
                 const v = veiculos.find(v => v.id === c.veiculoId);
-                return v?.nome.toLowerCase().includes(busca) || c.data.includes(busca);
+                return v?.nome.toLowerCase().includes(termoBuscaCombustivel) || c.data.includes(termoBuscaCombustivel);
             });
             filtradas.sort((a,b) => new Date(b.data) - new Date(a.data));
             tbody.innerHTML = '';
@@ -744,10 +760,10 @@
             // Saldo do mês
             const saldo = entradasMes - saidasTotaisMes;
 
-            // Margem de lucro correta
+            // Margem de lucro
             const margem = entradasMes > 0 ? (saldo / entradasMes) * 100 : 0;
 
-            // Previsão do mês: média de entradas dos últimos 3 meses (excluindo atual) - saídas totais do mês atual
+            // Previsão do mês: média de entradas dos últimos 3 meses - saídas totais
             const meses = [];
             for (let i = 1; i <= 3; i++) {
                 const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
@@ -759,7 +775,7 @@
             const mediaEntradas3 = meses.reduce((a,b) => a + b, 0) / 3;
             const previsao = mediaEntradas3 - saidasTotaisMes;
 
-            // Média diária de entradas
+            // Média diária
             const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
             const mediaDiaria = entradasMes / diasNoMes;
 
@@ -775,7 +791,7 @@
             if (saldo < 0) document.getElementById('saldoAtual').classList.add('saldo-negativo');
             else document.getElementById('saldoAtual').classList.remove('saldo-negativo');
 
-            // Gráfico linha últimos 7 dias
+            // ---------- GRÁFICO LINHA ----------
             const ultimos7Dias = [];
             for (let i = 6; i >= 0; i--) {
                 const d = new Date(hoje);
@@ -800,10 +816,16 @@
                         { label: 'Saídas', data: saidas7, borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)', tension: 0.3, fill: true }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
             });
 
-            // Gráfico barras consumo por veículo (mês)
+            // ---------- GRÁFICO BARRAS ----------
             const veiculosNomes = veiculos.map(v => v.nome);
             const consumos = veiculos.map(v => 
                 combustivelMes.filter(c => c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0)
@@ -814,48 +836,76 @@
             window.graficoBarras = new Chart(ctxBarras, {
                 type: 'bar',
                 data: {
-                    labels: veiculosNomes,
-                    datasets: [{ label: 'R$', data: consumos, backgroundColor: '#FFC107' }]
+                    labels: veiculosNomes.length ? veiculosNomes : ['Sem veículos'],
+                    datasets: [{ 
+                        label: 'R$', 
+                        data: consumos.length ? consumos : [0], 
+                        backgroundColor: '#FFC107' 
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false }
+                    } 
+                }
             });
 
-            // Gráficos pizza com efeito 3D (sombra)
+            // ---------- GRÁFICO PIZZA ENTRADAS ----------
             const categoriasEntrada = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => {
                 acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
                 return acc;
             }, {});
-            const categoriasSaida = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => {
-                acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
-                return acc;
-            }, {});
+            const labelsEnt = Object.keys(categoriasEntrada);
+            const dataEnt = Object.values(categoriasEntrada);
 
             if (window.graficoPizzaEntrada) window.graficoPizzaEntrada.destroy();
             const ctxPizzaEnt = document.getElementById('graficoPizzaEntrada').getContext('2d');
             window.graficoPizzaEntrada = new Chart(ctxPizzaEnt, {
                 type: 'pie',
                 data: {
-                    labels: Object.keys(categoriasEntrada).length ? Object.keys(categoriasEntrada) : ['Sem dados'],
+                    labels: labelsEnt.length ? labelsEnt : ['Sem dados'],
                     datasets: [{
-                        data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1],
+                        data: labelsEnt.length ? dataEnt : [1],
                         backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff', '#6610f2']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { position: 'bottom' }
+                    } 
+                }
             });
+
+            // ---------- GRÁFICO PIZZA SAÍDAS ----------
+            const categoriasSaida = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => {
+                acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
+                return acc;
+            }, {});
+            const labelsSai = Object.keys(categoriasSaida);
+            const dataSai = Object.values(categoriasSaida);
 
             if (window.graficoPizzaSaida) window.graficoPizzaSaida.destroy();
             const ctxPizzaSai = document.getElementById('graficoPizzaSaida').getContext('2d');
             window.graficoPizzaSaida = new Chart(ctxPizzaSai, {
                 type: 'pie',
                 data: {
-                    labels: Object.keys(categoriasSaida).length ? Object.keys(categoriasSaida) : ['Sem dados'],
+                    labels: labelsSai.length ? labelsSai : ['Sem dados'],
                     datasets: [{
-                        data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1],
+                        data: labelsSai.length ? dataSai : [1],
                         backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff', '#6610f2']
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { position: 'bottom' }
+                    } 
+                }
             });
         }
 
@@ -1004,10 +1054,7 @@
             await renderVeiculos();
             await atualizarDashboard();
 
-            // Filtros
-            document.getElementById('buscaTransacoes').addEventListener('input', renderTransacoes);
-            document.getElementById('buscaCombustivel').addEventListener('input', renderCombustivel);
-
+            // Atualizar ao mudar de aba
             document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
                 btn.addEventListener('shown.bs.tab', async function() {
                     if (this.id === 'dashboard-tab') await atualizarDashboard();
