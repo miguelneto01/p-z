@@ -10,10 +10,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- jsPDF e autoTable para PDF -->
+    <!-- Plugin para efeito 3D (opcional, apenas para sombra) -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <!-- jsPDF e autoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <!-- SheetJS para Excel -->
+    <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -43,6 +45,7 @@
         }
         .card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
         }
         .btn-warning {
             background-color: var(--primary-yellow);
@@ -89,6 +92,13 @@
             background-color: #138496;
             border-color: #117a8b;
         }
+        .search-box {
+            max-width: 300px;
+        }
+        /* Efeito 3D nos gráficos de pizza */
+        .chart-container {
+            filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));
+        }
     </style>
 </head>
 <body>
@@ -104,7 +114,7 @@
 
     <!-- Conteúdo principal -->
     <div class="container mt-4">
-        <!-- Abas de navegação -->
+        <!-- Abas -->
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Dashboard</button>
@@ -125,7 +135,7 @@
 
         <!-- Conteúdo das abas -->
         <div class="tab-content p-4 border border-top-0 bg-white rounded-bottom shadow-sm" id="myTabContent">
-            <!-- Aba Dashboard -->
+            <!-- DASHBOARD -->
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                 <h4 class="mb-4"><i class="fas fa-chart-line me-2 text-warning"></i>Dashboard</h4>
                 <div class="row g-3">
@@ -133,7 +143,7 @@
                         <div class="card stat-card p-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-muted">Saldo Atual</h6>
+                                    <h6 class="text-muted">Saldo Atual (mês)</h6>
                                     <h3 id="saldoAtual" class="fw-bold">R$ 0,00</h3>
                                 </div>
                                 <i class="fas fa-wallet fa-2x text-warning"></i>
@@ -174,7 +184,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="row mt-3 g-3">
                     <div class="col-md-4">
                         <div class="card stat-card p-3">
@@ -202,7 +211,7 @@
                         <div class="card stat-card p-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-muted">Média Diária</h6>
+                                    <h6 class="text-muted">Média Diária (Entradas)</h6>
                                     <h3 id="mediaDiaria" class="fw-bold">R$ 0,00</h3>
                                 </div>
                                 <i class="fas fa-calendar-day fa-2x text-warning"></i>
@@ -216,39 +225,51 @@
                     <div class="col-md-6">
                         <div class="card p-3">
                             <h5><i class="fas fa-chart-line me-2 text-warning"></i>Entradas vs Saídas (últimos 7 dias)</h5>
-                            <canvas id="graficoLinha" style="height: 250px;"></canvas>
+                            <div class="chart-container">
+                                <canvas id="graficoLinha" style="height: 250px; width:100%;"></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
                             <h5><i class="fas fa-truck me-2 text-warning"></i>Consumo de Combustível por Veículo (mês)</h5>
-                            <canvas id="graficoBarras" style="height: 250px;"></canvas>
+                            <div class="chart-container">
+                                <canvas id="graficoBarras" style="height: 250px; width:100%;"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-
                 <div class="row mt-3 g-3">
                     <div class="col-md-6">
                         <div class="card p-3">
                             <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (entradas)</h5>
-                            <canvas id="graficoPizzaEntrada" style="height: 250px;"></canvas>
+                            <div class="chart-container" style="filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));">
+                                <canvas id="graficoPizzaEntrada" style="height: 250px; width:100%;"></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3">
                             <h5><i class="fas fa-chart-pie me-2 text-warning"></i>Materiais mais movimentados (saídas)</h5>
-                            <canvas id="graficoPizzaSaida" style="height: 250px;"></canvas>
+                            <div class="chart-container" style="filter: drop-shadow(5px 5px 10px rgba(0,0,0,0.3));">
+                                <canvas id="graficoPizzaSaida" style="height: 250px; width:100%;"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Aba Transações -->
+            <!-- TRANSAÇÕES -->
             <div class="tab-pane fade" id="transacoes" role="tabpanel">
                 <h4 class="mb-3"><i class="fas fa-exchange-alt me-2 text-warning"></i>Controle de Transações</h4>
-                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalTransacao" onclick="limparModalTransacao()">
-                    <i class="fas fa-plus"></i> Nova Transação
-                </button>
+                <div class="d-flex justify-content-between mb-3">
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalTransacao" onclick="limparModalTransacao()">
+                        <i class="fas fa-plus"></i> Nova Transação
+                    </button>
+                    <div class="search-box">
+                        <input type="text" id="buscaTransacoes" class="form-control" placeholder="Buscar por descrição, categoria ou data...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover" id="tabelaTransacoes">
                         <thead>
@@ -266,12 +287,17 @@
                 </div>
             </div>
 
-            <!-- Aba Combustível -->
+            <!-- COMBUSTÍVEL -->
             <div class="tab-pane fade" id="combustivel" role="tabpanel">
                 <h4 class="mb-3"><i class="fas fa-gas-pump me-2 text-warning"></i>Controle de Combustível</h4>
-                <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalCombustivel" onclick="limparModalCombustivel()">
-                    <i class="fas fa-plus"></i> Novo Abastecimento
-                </button>
+                <div class="d-flex justify-content-between mb-3">
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#modalCombustivel" onclick="limparModalCombustivel()">
+                        <i class="fas fa-plus"></i> Novo Abastecimento
+                    </button>
+                    <div class="search-box">
+                        <input type="text" id="buscaCombustivel" class="form-control" placeholder="Buscar por veículo ou data...">
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-striped" id="tabelaCombustivel">
                         <thead>
@@ -287,7 +313,7 @@
                 </div>
             </div>
 
-            <!-- Aba Veículos -->
+            <!-- VEÍCULOS -->
             <div class="tab-pane fade" id="veiculos" role="tabpanel">
                 <h4 class="mb-3"><i class="fas fa-truck me-2 text-warning"></i>Veículos</h4>
                 <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#modalVeiculo" onclick="limparModalVeiculo()">
@@ -308,7 +334,7 @@
                 </div>
             </div>
 
-            <!-- Aba Relatórios -->
+            <!-- RELATÓRIOS -->
             <div class="tab-pane fade" id="relatorios" role="tabpanel">
                 <h4 class="mb-3"><i class="fas fa-file-alt me-2 text-warning"></i>Relatórios Detalhados</h4>
                 <div class="row g-3">
@@ -326,29 +352,23 @@
                             <option value="todos">Todos</option>
                             <option value="entrada">Entradas</option>
                             <option value="saida">Saídas</option>
+                            <option value="combustivel">Combustível</option>
                         </select>
                     </div>
                     <div class="col-md-3 d-flex align-items-end gap-2">
-                        <button class="btn btn-warning" onclick="gerarRelatorio()">
-                            <i class="fas fa-search"></i> Gerar
-                        </button>
-                        <button class="btn btn-dark" onclick="exportarPDF()">
-                            <i class="fas fa-file-pdf"></i> PDF
-                        </button>
-                        <button class="btn btn-success" onclick="exportarExcel()">
-                            <i class="fas fa-file-excel"></i> Excel
-                        </button>
+                        <button class="btn btn-warning" onclick="gerarRelatorio()"><i class="fas fa-search"></i> Gerar</button>
+                        <button class="btn btn-dark" onclick="exportarPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+                        <button class="btn btn-success" onclick="exportarExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                     </div>
                 </div>
                 <hr>
-                <div id="relatorioResultado" class="mt-3">
-                    <!-- Resultado do relatório será inserido aqui -->
-                </div>
+                <div id="relatorioResultado" class="mt-3"></div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Nova/Editar Transação -->
+    <!-- MODAIS -->
+    <!-- Modal Transação -->
     <div class="modal fade" id="modalTransacao" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -391,8 +411,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Novo/Editar Combustível -->
+    <!-- Modal Combustível -->
     <div class="modal fade" id="modalCombustivel" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -424,8 +443,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Novo/Editar Veículo -->
+    <!-- Modal Veículo -->
     <div class="modal fade" id="modalVeiculo" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -437,12 +455,12 @@
                     <form id="formVeiculo">
                         <input type="hidden" id="veiculoId">
                         <div class="mb-3">
-                            <label class="form-label">Nome do Veículo</label>
-                            <input type="text" class="form-control" id="nomeVeiculo" placeholder="Ex: Caminhão Mercedes 1113" required>
+                            <label class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="nomeVeiculo" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Placa</label>
-                            <input type="text" class="form-control" id="placaVeiculo" placeholder="ABC-1234" required>
+                            <input type="text" class="form-control" id="placaVeiculo" required>
                         </div>
                     </form>
                 </div>
@@ -457,7 +475,7 @@
     <!-- Rodapé -->
     <footer class="footer text-center">
         <div class="container">
-            <span>PZ Transportes - Sistema de Gestão v4.0 (Firebase) - UX/UI Aprimorado</span>
+            <span>PZ Transportes - Sistema de Gestão v6.0 (Firebase) - Versão Final</span>
         </div>
     </footer>
 
@@ -465,7 +483,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // ==================== CONFIGURAÇÃO FIREBASE ====================
+        // ==================== FIREBASE ====================
         const firebaseConfig = {
             apiKey: "AIzaSyAE_uLbq_NrtqTL7yr55xdKVnz6d6nd_Ic",
             authDomain: "pztransp.firebaseapp.com",
@@ -474,38 +492,46 @@
             messagingSenderId: "950404250616",
             appId: "1:950404250616:web:c947d4366867c6ff57b40d"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ==================== FUNÇÕES DE FORMATAÇÃO ====================
+        // ==================== FORMATAÇÃO ====================
         function formatarMoeda(valor) {
             return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // ==================== FUNÇÕES DE LEITURA ====================
+        // ==================== LEITURA ====================
         async function getVeiculos() {
-            const snapshot = await db.collection('veiculos').get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const snap = await db.collection('veiculos').get();
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
-
         async function getTransacoes() {
-            const snapshot = await db.collection('transacoes').get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const snap = await db.collection('transacoes').get();
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
-
         async function getCombustivel() {
-            const snapshot = await db.collection('combustivel').get();
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const snap = await db.collection('combustivel').get();
+            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
-        // ==================== RENDERIZAÇÃO DE TABELAS ====================
+        // ==================== VARIÁVEIS GLOBAIS PARA FILTRO ====================
+        let todasTransacoes = [];
+        let todoCombustivel = [];
+
+        // ==================== RENDER COM FILTRO ====================
         async function renderTransacoes() {
             const tbody = document.querySelector('#tabelaTransacoes tbody');
+            const busca = document.getElementById('buscaTransacoes').value.toLowerCase();
             const transacoes = await getTransacoes();
+            todasTransacoes = transacoes;
+            const filtradas = transacoes.filter(t => 
+                (t.descricao?.toLowerCase().includes(busca) || 
+                t.categoria?.toLowerCase().includes(busca) ||
+                t.data.includes(busca))
+            );
+            filtradas.sort((a,b) => new Date(b.data) - new Date(a.data));
             tbody.innerHTML = '';
-            transacoes.sort((a,b) => new Date(b.data) - new Date(a.data));
-            transacoes.forEach(t => {
+            filtradas.forEach(t => {
                 const row = `<tr>
                     <td>${t.data}</td>
                     <td><span class="badge ${t.tipo === 'entrada' ? 'bg-success' : 'bg-danger'}">${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
@@ -523,11 +549,17 @@
 
         async function renderCombustivel() {
             const tbody = document.querySelector('#tabelaCombustivel tbody');
+            const busca = document.getElementById('buscaCombustivel').value.toLowerCase();
             const combustiveis = await getCombustivel();
+            todoCombustivel = combustiveis;
             const veiculos = await getVeiculos();
+            const filtradas = combustiveis.filter(c => {
+                const v = veiculos.find(v => v.id === c.veiculoId);
+                return v?.nome.toLowerCase().includes(busca) || c.data.includes(busca);
+            });
+            filtradas.sort((a,b) => new Date(b.data) - new Date(a.data));
             tbody.innerHTML = '';
-            combustiveis.sort((a,b) => new Date(b.data) - new Date(a.data));
-            combustiveis.forEach(c => {
+            filtradas.forEach(c => {
                 const veiculo = veiculos.find(v => v.id === c.veiculoId) || { nome: 'Desconhecido' };
                 const row = `<tr>
                     <td>${c.data}</td>
@@ -560,6 +592,7 @@
             });
         }
 
+        // Preencher select de veículos
         async function preencherSelectVeiculos() {
             const select = document.getElementById('veiculoComb');
             const veiculos = await getVeiculos();
@@ -569,14 +602,13 @@
             });
         }
 
-        // ==================== CRUD TRANSAÇÕES ====================
-        window.limparModalTransacao = function() {
+        // ==================== CRUD ====================
+        window.limparModalTransacao = () => {
             document.getElementById('transacaoId').value = '';
             document.getElementById('formTransacao').reset();
             document.getElementById('modalTransacaoTitle').innerText = 'Nova Transação';
         };
-
-        window.editarTransacao = async function(id) {
+        window.editarTransacao = async (id) => {
             const doc = await db.collection('transacoes').doc(id).get();
             const t = doc.data();
             document.getElementById('transacaoId').value = id;
@@ -588,8 +620,7 @@
             document.getElementById('modalTransacaoTitle').innerText = 'Editar Transação';
             new bootstrap.Modal(document.getElementById('modalTransacao')).show();
         };
-
-        window.salvarTransacao = async function() {
+        window.salvarTransacao = async () => {
             const id = document.getElementById('transacaoId').value;
             const dados = {
                 tipo: document.getElementById('tipo').value,
@@ -598,36 +629,27 @@
                 categoria: document.getElementById('categoria').value,
                 descricao: document.getElementById('descricao').value
             };
-            if (!dados.data || !dados.valor || !dados.categoria) {
-                alert('Preencha todos os campos obrigatórios.');
-                return;
-            }
-            if (id) {
-                await db.collection('transacoes').doc(id).update(dados);
-            } else {
-                await db.collection('transacoes').add(dados);
-            }
+            if (!dados.data || !dados.valor || !dados.categoria) return alert('Preencha todos os campos obrigatórios.');
+            if (id) await db.collection('transacoes').doc(id).update(dados);
+            else await db.collection('transacoes').add(dados);
             await renderTransacoes();
             await atualizarDashboard();
             bootstrap.Modal.getInstance(document.getElementById('modalTransacao')).hide();
         };
-
-        window.excluirTransacao = async function(id) {
-            if (confirm('Deseja realmente excluir esta transação?')) {
+        window.excluirTransacao = async (id) => {
+            if (confirm('Excluir esta transação?')) {
                 await db.collection('transacoes').doc(id).delete();
                 await renderTransacoes();
                 await atualizarDashboard();
             }
         };
 
-        // ==================== CRUD COMBUSTÍVEL ====================
-        window.limparModalCombustivel = function() {
+        window.limparModalCombustivel = () => {
             document.getElementById('combustivelId').value = '';
             document.getElementById('formCombustivel').reset();
             document.getElementById('modalCombustivelTitle').innerText = 'Novo Abastecimento';
         };
-
-        window.editarCombustivel = async function(id) {
+        window.editarCombustivel = async (id) => {
             const doc = await db.collection('combustivel').doc(id).get();
             const c = doc.data();
             document.getElementById('combustivelId').value = id;
@@ -637,44 +659,34 @@
             document.getElementById('modalCombustivelTitle').innerText = 'Editar Abastecimento';
             new bootstrap.Modal(document.getElementById('modalCombustivel')).show();
         };
-
-        window.salvarCombustivel = async function() {
+        window.salvarCombustivel = async () => {
             const id = document.getElementById('combustivelId').value;
             const dados = {
                 veiculoId: document.getElementById('veiculoComb').value,
                 data: document.getElementById('dataComb').value,
                 valor: parseFloat(document.getElementById('valorComb').value)
             };
-            if (!dados.veiculoId || !dados.data || !dados.valor) {
-                alert('Preencha todos os campos.');
-                return;
-            }
-            if (id) {
-                await db.collection('combustivel').doc(id).update(dados);
-            } else {
-                await db.collection('combustivel').add(dados);
-            }
+            if (!dados.veiculoId || !dados.data || !dados.valor) return alert('Preencha todos os campos.');
+            if (id) await db.collection('combustivel').doc(id).update(dados);
+            else await db.collection('combustivel').add(dados);
             await renderCombustivel();
             await atualizarDashboard();
             bootstrap.Modal.getInstance(document.getElementById('modalCombustivel')).hide();
         };
-
-        window.excluirCombustivel = async function(id) {
-            if (confirm('Deseja realmente excluir este abastecimento?')) {
+        window.excluirCombustivel = async (id) => {
+            if (confirm('Excluir este abastecimento?')) {
                 await db.collection('combustivel').doc(id).delete();
                 await renderCombustivel();
                 await atualizarDashboard();
             }
         };
 
-        // ==================== CRUD VEÍCULOS ====================
-        window.limparModalVeiculo = function() {
+        window.limparModalVeiculo = () => {
             document.getElementById('veiculoId').value = '';
             document.getElementById('formVeiculo').reset();
             document.getElementById('modalVeiculoTitle').innerText = 'Novo Veículo';
         };
-
-        window.editarVeiculo = async function(id) {
+        window.editarVeiculo = async (id) => {
             const doc = await db.collection('veiculos').doc(id).get();
             const v = doc.data();
             document.getElementById('veiculoId').value = id;
@@ -683,110 +695,99 @@
             document.getElementById('modalVeiculoTitle').innerText = 'Editar Veículo';
             new bootstrap.Modal(document.getElementById('modalVeiculo')).show();
         };
-
-        window.salvarVeiculo = async function() {
+        window.salvarVeiculo = async () => {
             const id = document.getElementById('veiculoId').value;
             const dados = {
                 nome: document.getElementById('nomeVeiculo').value,
                 placa: document.getElementById('placaVeiculo').value
             };
-            if (!dados.nome || !dados.placa) {
-                alert('Preencha todos os campos.');
-                return;
-            }
-            if (id) {
-                await db.collection('veiculos').doc(id).update(dados);
-            } else {
-                await db.collection('veiculos').add(dados);
-            }
+            if (!dados.nome || !dados.placa) return alert('Preencha todos os campos.');
+            if (id) await db.collection('veiculos').doc(id).update(dados);
+            else await db.collection('veiculos').add(dados);
             await renderVeiculos();
             await preencherSelectVeiculos();
             bootstrap.Modal.getInstance(document.getElementById('modalVeiculo')).hide();
         };
-
-        window.excluirVeiculo = async function(id) {
+        window.excluirVeiculo = async (id) => {
             const combustiveis = await getCombustivel();
             if (combustiveis.some(c => c.veiculoId === id)) {
-                alert('Não é possível excluir este veículo pois existem abastecimentos vinculados.');
-                return;
+                return alert('Veículo possui abastecimentos vinculados.');
             }
-            if (confirm('Deseja realmente excluir este veículo?')) {
+            if (confirm('Excluir este veículo?')) {
                 await db.collection('veiculos').doc(id).delete();
                 await renderVeiculos();
                 await preencherSelectVeiculos();
             }
         };
 
-        // ==================== DASHBOARD ====================
+        // ==================== DASHBOARD CORRIGIDO ====================
         async function atualizarDashboard() {
             const transacoes = await getTransacoes();
             const combustiveis = await getCombustivel();
             const veiculos = await getVeiculos();
 
             const hoje = new Date();
-            const mesAtual = hoje.toISOString().slice(0,7);
-            const anoAtual = hoje.getFullYear();
-            const mes = hoje.getMonth() + 1;
+            const mesAtual = hoje.toISOString().slice(0,7); // YYYY-MM
 
-            // Transações do mês atual
+            // Transações do mês
             const transacoesMes = transacoes.filter(t => t.data.startsWith(mesAtual));
             const entradasMes = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-            const saidasMes = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-            const saldo = entradasMes - saidasMes;
+            const saidasOperacionaisMes = transacoesMes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
 
-            // Previsão do mês (projeção baseada na média dos últimos 3 meses)
-            const tresMeses = [];
+            // Combustível do mês
+            const combustivelMes = combustiveis.filter(c => c.data.startsWith(mesAtual));
+            const totalCombustivelMes = combustivelMes.reduce((acc, c) => acc + c.valor, 0);
+
+            // Saídas totais = operacionais + combustível
+            const saidasTotaisMes = saidasOperacionaisMes + totalCombustivelMes;
+
+            // Saldo do mês
+            const saldo = entradasMes - saidasTotaisMes;
+
+            // Margem de lucro correta
+            const margem = entradasMes > 0 ? (saldo / entradasMes) * 100 : 0;
+
+            // Previsão do mês: média de entradas dos últimos 3 meses (excluindo atual) - saídas totais do mês atual
+            const meses = [];
             for (let i = 1; i <= 3; i++) {
-                let mesPassado = mes - i;
-                let anoPassado = anoAtual;
-                if (mesPassado <= 0) {
-                    mesPassado += 12;
-                    anoPassado--;
-                }
-                const mesStr = `${anoPassado}-${String(mesPassado).padStart(2, '0')}`;
+                const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+                const mesStr = d.toISOString().slice(0,7);
                 const transacoesMesPassado = transacoes.filter(t => t.data.startsWith(mesStr));
                 const entradasPassado = transacoesMesPassado.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-                tresMeses.push(entradasPassado);
+                meses.push(entradasPassado);
             }
-            const mediaEntradas = tresMeses.reduce((a, b) => a + b, 0) / 3;
-            const previsao = mediaEntradas - saidasMes; // projeção simples
+            const mediaEntradas3 = meses.reduce((a,b) => a + b, 0) / 3;
+            const previsao = mediaEntradas3 - saidasTotaisMes;
 
-            // Média diária de entradas (considerando dias úteis ou todos os dias)
-            const diasNoMes = new Date(anoAtual, mes, 0).getDate();
+            // Média diária de entradas
+            const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
             const mediaDiaria = entradasMes / diasNoMes;
 
             // Atualizar cards
             document.getElementById('saldoAtual').innerText = `R$ ${formatarMoeda(saldo)}`;
             document.getElementById('entradasMes').innerText = `R$ ${formatarMoeda(entradasMes)}`;
-            document.getElementById('saidasMes').innerText = `R$ ${formatarMoeda(saidasMes)}`;
+            document.getElementById('saidasMes').innerText = `R$ ${formatarMoeda(saidasTotaisMes)}`;
             document.getElementById('previsaoMes').innerText = `R$ ${formatarMoeda(previsao)}`;
-
-            const saldoEl = document.getElementById('saldoAtual');
-            if (saldo < 0) saldoEl.classList.add('saldo-negativo');
-            else saldoEl.classList.remove('saldo-negativo');
-
-            const margem = entradasMes > 0 ? ((saldo / entradasMes) * 100).toFixed(2) : 0;
-            document.getElementById('margemLucro').innerText = `${margem.replace('.', ',')}%`;
-
-            const totalComb = combustiveis.filter(c => c.data.startsWith(mesAtual)).reduce((acc, c) => acc + c.valor, 0);
-            document.getElementById('totalCombustivelMes').innerText = `R$ ${formatarMoeda(totalComb)}`;
+            document.getElementById('margemLucro').innerText = `${margem.toFixed(2).replace('.', ',')}%`;
+            document.getElementById('totalCombustivelMes').innerText = `R$ ${formatarMoeda(totalCombustivelMes)}`;
             document.getElementById('mediaDiaria').innerText = `R$ ${formatarMoeda(mediaDiaria)}`;
+
+            if (saldo < 0) document.getElementById('saldoAtual').classList.add('saldo-negativo');
+            else document.getElementById('saldoAtual').classList.remove('saldo-negativo');
 
             // Gráfico linha últimos 7 dias
             const ultimos7Dias = [];
             for (let i = 6; i >= 0; i--) {
                 const d = new Date(hoje);
                 d.setDate(hoje.getDate() - i);
-                const diaStr = d.toISOString().split('T')[0];
-                ultimos7Dias.push(diaStr);
+                ultimos7Dias.push(d.toISOString().split('T')[0]);
             }
-
-            const entradas7 = ultimos7Dias.map(dia => {
-                return transacoes.filter(t => t.data === dia && t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-            });
-            const saidas7 = ultimos7Dias.map(dia => {
-                return transacoes.filter(t => t.data === dia && t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-            });
+            const entradas7 = ultimos7Dias.map(dia => 
+                transacoes.filter(t => t.data === dia && t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0)
+            );
+            const saidas7 = ultimos7Dias.map(dia => 
+                transacoes.filter(t => t.data === dia && t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0)
+            );
 
             if (window.graficoLinha) window.graficoLinha.destroy();
             const ctxLinha = document.getElementById('graficoLinha').getContext('2d');
@@ -799,17 +800,14 @@
                         { label: 'Saídas', data: saidas7, borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)', tension: 0.3, fill: true }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // Gráfico barras consumo por veículo
+            // Gráfico barras consumo por veículo (mês)
             const veiculosNomes = veiculos.map(v => v.nome);
-            const consumos = veiculos.map(v => {
-                return combustiveis.filter(c => c.data.startsWith(mesAtual) && c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0);
-            });
+            const consumos = veiculos.map(v => 
+                combustivelMes.filter(c => c.veiculoId === v.id).reduce((acc, c) => acc + c.valor, 0)
+            );
 
             if (window.graficoBarras) window.graficoBarras.destroy();
             const ctxBarras = document.getElementById('graficoBarras').getContext('2d');
@@ -819,13 +817,10 @@
                     labels: veiculosNomes,
                     datasets: [{ label: 'R$', data: consumos, backgroundColor: '#FFC107' }]
                 },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // Gráficos pizza
+            // Gráficos pizza com efeito 3D (sombra)
             const categoriasEntrada = transacoesMes.filter(t => t.tipo === 'entrada').reduce((acc, t) => {
                 acc[t.categoria] = (acc[t.categoria] || 0) + t.valor;
                 return acc;
@@ -841,9 +836,12 @@
                 type: 'pie',
                 data: {
                     labels: Object.keys(categoriasEntrada).length ? Object.keys(categoriasEntrada) : ['Sem dados'],
-                    datasets: [{ data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff'] }]
+                    datasets: [{
+                        data: Object.keys(categoriasEntrada).length ? Object.values(categoriasEntrada) : [1],
+                        backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff', '#6610f2']
+                    }]
                 },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
 
             if (window.graficoPizzaSaida) window.graficoPizzaSaida.destroy();
@@ -852,9 +850,12 @@
                 type: 'pie',
                 data: {
                     labels: Object.keys(categoriasSaida).length ? Object.keys(categoriasSaida) : ['Sem dados'],
-                    datasets: [{ data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1], backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff'] }]
+                    datasets: [{
+                        data: Object.keys(categoriasSaida).length ? Object.values(categoriasSaida) : [1],
+                        backgroundColor: ['#FFC107', '#17a2b8', '#28a745', '#dc3545', '#6c757d', '#007bff', '#6610f2']
+                    }]
                 },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
         }
 
@@ -863,174 +864,149 @@
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
             const tipo = document.getElementById('relTipo').value;
-            if (!inicio || !fim) {
-                alert('Selecione o período.');
-                return;
-            }
+            if (!inicio || !fim) return alert('Selecione o período.');
 
-            const transacoes = await getTransacoes();
-            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
-            if (tipo !== 'todos') {
-                filtradas = filtradas.filter(t => t.tipo === tipo);
-            }
+            let html = `<h5>Período: ${inicio} a ${fim} | Tipo: ${tipo}</h5>`;
 
-            const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-            const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-            const saldo = entradas - saidas;
-            const margem = entradas > 0 ? ((saldo / entradas) * 100).toFixed(2) : 0;
+            if (tipo === 'combustivel') {
+                // Relatório de combustível
+                const combustiveis = await getCombustivel();
+                const veiculos = await getVeiculos();
+                const filtradas = combustiveis.filter(c => c.data >= inicio && c.data <= fim);
+                const total = filtradas.reduce((acc, c) => acc + c.valor, 0);
 
-            let html = `
-                <h5 class="mb-3">Período: ${inicio} a ${fim} | Tipo: ${tipo === 'todos' ? 'Todos' : tipo}</h5>
-                <div class="row g-2 mb-3">
-                    <div class="col-md-3">
-                        <div class="card bg-light p-2">
-                            <h6 class="text-muted">Total Entradas</h6>
-                            <h5 class="text-success">R$ ${formatarMoeda(entradas)}</h5>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light p-2">
-                            <h6 class="text-muted">Total Saídas</h6>
-                            <h5 class="text-danger">R$ ${formatarMoeda(saidas)}</h5>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light p-2">
-                            <h6 class="text-muted">Saldo</h6>
-                            <h5 class="${saldo < 0 ? 'text-danger' : 'text-success'}">R$ ${formatarMoeda(saldo)}</h5>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light p-2">
-                            <h6 class="text-muted">Margem</h6>
-                            <h5>${margem.replace('.', ',')}%</h5>
-                        </div>
-                    </div>
+                html += `<div class="row g-2 mb-3">
+                    <div class="col-md-12"><div class="card bg-light p-2"><h6>Total Combustível</h6><h5>R$ ${formatarMoeda(total)}</h5></div></div>
                 </div>
-                <h6>Transações (${filtradas.length})</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped" id="tabelaRelatorio">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Tipo</th>
-                                <th>Categoria</th>
-                                <th>Descrição</th>
-                                <th>Valor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
+                <table class="table table-sm"><thead><tr><th>Data</th><th>Veículo</th><th>Valor</th></tr></thead><tbody>`;
+                filtradas.sort((a,b) => a.data.localeCompare(b.data));
+                filtradas.forEach(c => {
+                    const v = veiculos.find(v => v.id === c.veiculoId) || { nome: 'Desconhecido' };
+                    html += `<tr><td>${c.data}</td><td>${v.nome}</td><td>R$ ${formatarMoeda(c.valor)}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            } else {
+                // Relatório de transações
+                const transacoes = await getTransacoes();
+                let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+                if (tipo !== 'todos') filtradas = filtradas.filter(t => t.tipo === tipo);
 
-            filtradas.sort((a,b) => a.data.localeCompare(b.data));
-            filtradas.forEach(t => {
-                html += `<tr>
-                    <td>${t.data}</td>
-                    <td><span class="badge ${t.tipo === 'entrada' ? 'bg-success' : 'bg-danger'}">${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
-                    <td>${t.categoria}</td>
-                    <td>${t.descricao || ''}</td>
-                    <td>R$ ${formatarMoeda(t.valor)}</td>
-                </tr>`;
-            });
-            html += `</tbody></table>`;
+                const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+                const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+                const saldo = entradas - saidas;
+                const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
 
+                html += `<div class="row g-2 mb-3">
+                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Entradas</h6><h5 class="text-success">R$ ${formatarMoeda(entradas)}</h5></div></div>
+                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Saídas</h6><h5 class="text-danger">R$ ${formatarMoeda(saidas)}</h5></div></div>
+                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Saldo</h6><h5 class="${saldo<0?'text-danger':'text-success'}">R$ ${formatarMoeda(saldo)}</h5></div></div>
+                    <div class="col-md-3"><div class="card bg-light p-2"><h6>Margem</h6><h5>${margem.toFixed(2).replace('.',',')}%</h5></div></div>
+                </div>
+                <table class="table table-sm"><thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th></tr></thead><tbody>`;
+                filtradas.sort((a,b) => a.data.localeCompare(b.data));
+                filtradas.forEach(t => {
+                    html += `<tr><td>${t.data}</td><td>${t.tipo==='entrada'?'Entrada':'Saída'}</td><td>${t.categoria}</td><td>${t.descricao||''}</td><td>R$ ${formatarMoeda(t.valor)}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+            }
             document.getElementById('relatorioResultado').innerHTML = html;
         };
 
-        // ==================== EXPORTAÇÃO ====================
         window.exportarPDF = async function() {
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
             const tipo = document.getElementById('relTipo').value;
-            if (!inicio || !fim) {
-                alert('Selecione o período.');
-                return;
-            }
-
-            const transacoes = await getTransacoes();
-            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
-            if (tipo !== 'todos') {
-                filtradas = filtradas.filter(t => t.tipo === tipo);
-            }
-
-            const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-            const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
-            const saldo = entradas - saidas;
-            const margem = entradas > 0 ? ((saldo / entradas) * 100).toFixed(2) : 0;
+            if (!inicio || !fim) return alert('Selecione o período.');
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            doc.setFontSize(18).setTextColor(255,193,7).text('PZ Transportes',14,20);
+            doc.setFontSize(12).setTextColor(0,0,0).text(`Relatório ${inicio} a ${fim} - ${tipo}`,14,30);
 
-            doc.setFontSize(18);
-            doc.setTextColor(255, 193, 7);
-            doc.text('PZ Transportes', 14, 20);
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Relatório de Transações - ${inicio} a ${fim}`, 14, 30);
+            if (tipo === 'combustivel') {
+                const combustiveis = await getCombustivel();
+                const veiculos = await getVeiculos();
+                const filtradas = combustiveis.filter(c => c.data >= inicio && c.data <= fim);
+                const total = filtradas.reduce((acc, c) => acc + c.valor, 0);
+                doc.setFontSize(10).text(`Total Combustível: R$ ${formatarMoeda(total)}`,14,40);
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Data','Veículo','Valor']],
+                    body: filtradas.sort((a,b)=>a.data.localeCompare(b.data)).map(c=>{
+                        const v = veiculos.find(v => v.id === c.veiculoId) || { nome: 'Desconhecido' };
+                        return [c.data, v.nome, formatarMoeda(c.valor)];
+                    }),
+                    headStyles: { fillColor: [52,58,64] }
+                });
+            } else {
+                const transacoes = await getTransacoes();
+                let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+                if (tipo !== 'todos') filtradas = filtradas.filter(t => t.tipo === tipo);
+                const entradas = filtradas.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+                const saidas = filtradas.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+                const saldo = entradas - saidas;
+                const margem = entradas > 0 ? (saldo / entradas) * 100 : 0;
 
-            doc.setFontSize(10);
-            doc.text(`Total Entradas: R$ ${formatarMoeda(entradas)}`, 14, 40);
-            doc.text(`Total Saídas: R$ ${formatarMoeda(saidas)}`, 14, 46);
-            doc.text(`Saldo: R$ ${formatarMoeda(saldo)}`, 14, 52);
-            doc.text(`Margem de Lucro: ${margem.replace('.', ',')}%`, 14, 58);
-
-            const colunas = ['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor (R$)'];
-            const linhas = filtradas.sort((a,b) => a.data.localeCompare(b.data)).map(t => [
-                t.data,
-                t.tipo === 'entrada' ? 'Entrada' : 'Saída',
-                t.categoria,
-                t.descricao || '',
-                formatarMoeda(t.valor)
-            ]);
-
-            doc.autoTable({
-                startY: 65,
-                head: [colunas],
-                body: linhas,
-                theme: 'grid',
-                headStyles: { fillColor: [52, 58, 64] },
-                styles: { fontSize: 8 }
-            });
-
-            doc.save(`relatorio_pz_${inicio}_a_${fim}.pdf`);
+                doc.setFontSize(10).text(`Entradas: R$ ${formatarMoeda(entradas)}`,14,40);
+                doc.text(`Saídas: R$ ${formatarMoeda(saidas)}`,14,46);
+                doc.text(`Saldo: R$ ${formatarMoeda(saldo)}`,14,52);
+                doc.text(`Margem: ${margem.toFixed(2).replace('.',',')}%`,14,58);
+                doc.autoTable({
+                    startY: 65,
+                    head: [['Data','Tipo','Categoria','Descrição','Valor']],
+                    body: filtradas.sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[
+                        t.data, t.tipo==='entrada'?'Entrada':'Saída', t.categoria, t.descricao||'', formatarMoeda(t.valor)
+                    ]),
+                    headStyles: { fillColor: [52,58,64] }
+                });
+            }
+            doc.save(`relatorio_${inicio}_a_${fim}_${tipo}.pdf`);
         };
 
         window.exportarExcel = async function() {
             const inicio = document.getElementById('relInicio').value;
             const fim = document.getElementById('relFim').value;
             const tipo = document.getElementById('relTipo').value;
-            if (!inicio || !fim) {
-                alert('Selecione o período.');
-                return;
+            if (!inicio || !fim) return alert('Selecione o período.');
+
+            let dados = [];
+            if (tipo === 'combustivel') {
+                const combustiveis = await getCombustivel();
+                const veiculos = await getVeiculos();
+                const filtradas = combustiveis.filter(c => c.data >= inicio && c.data <= fim);
+                dados = filtradas.map(c => {
+                    const v = veiculos.find(v => v.id === c.veiculoId) || { nome: 'Desconhecido' };
+                    return { Data: c.data, Veículo: v.nome, Valor: c.valor };
+                });
+            } else {
+                const transacoes = await getTransacoes();
+                let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
+                if (tipo !== 'todos') filtradas = filtradas.filter(t => t.tipo === tipo);
+                dados = filtradas.map(t => ({
+                    Data: t.data,
+                    Tipo: t.tipo === 'entrada' ? 'Entrada' : 'Saída',
+                    Categoria: t.categoria,
+                    Descrição: t.descricao || '',
+                    Valor: t.valor
+                }));
             }
-
-            const transacoes = await getTransacoes();
-            let filtradas = transacoes.filter(t => t.data >= inicio && t.data <= fim);
-            if (tipo !== 'todos') {
-                filtradas = filtradas.filter(t => t.tipo === tipo);
-            }
-
-            const dados = filtradas.map(t => ({
-                Data: t.data,
-                Tipo: t.tipo === 'entrada' ? 'Entrada' : 'Saída',
-                Categoria: t.categoria,
-                Descrição: t.descricao || '',
-                Valor: t.valor
-            }));
-
             const ws = XLSX.utils.json_to_sheet(dados);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
-            XLSX.writeFile(wb, `relatorio_pz_${inicio}_a_${fim}.xlsx`);
+            XLSX.writeFile(wb, `relatorio_${inicio}_a_${fim}_${tipo}.xlsx`);
         };
 
         // ==================== INICIALIZAÇÃO ====================
         (async function init() {
+            await preencherSelectVeiculos();
             await renderTransacoes();
             await renderCombustivel();
             await renderVeiculos();
-            await preencherSelectVeiculos();
             await atualizarDashboard();
+
+            // Filtros
+            document.getElementById('buscaTransacoes').addEventListener('input', renderTransacoes);
+            document.getElementById('buscaCombustivel').addEventListener('input', renderCombustivel);
 
             document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
                 btn.addEventListener('shown.bs.tab', async function() {
